@@ -1,6 +1,6 @@
 Turbo-Jpeg
 ==========
-During the compilation time the program is linked with turbojpeg
+During the compilation time the program is linked with turbojpeg.
 You don't need any compilation flags.
 Currently supported:
 - Linux
@@ -17,10 +17,12 @@ var
   width, height: int32
   jpegSubsamp: TJSAMP
   colorSpace: TJCS
-  jpegRaw = readFile("tests/test.jpg")
+  jpegRaw = readFile("examples/test.jpg")
   success: bool
 
-# ~~~~~~~~~~~~~~~~~~~~~~ DECOMPRESS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+#####################################################
+##                  DECOMPRESS                     ##
+#####################################################
 # Init Handler
 var handle = tjInitDecompress()
 
@@ -39,7 +41,9 @@ success = tjDecompress2(handle, jpegRaw, outBuffer, width, height, TJPF_RGB, TJF
 # free handle
 tjDestroy(handle)
 
-# ~~~~~~~~~~~~~~~~~~~~~~ COMPRESS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#####################################################
+##                    COMPRESS                     ##
+#####################################################
 var 
   rawRGBbuffer = outBuffer
   outputJPGbuffer: ptr UncheckedArray[byte]

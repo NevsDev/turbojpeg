@@ -4,7 +4,7 @@ var
   width, height: int32
   jpegSubsamp: TJSAMP
   colorSpace: TJCS
-  jpegRaw = readFile("tests/example.jpg")
+  jpegRaw = readFile("examples/example.jpg")
   success: bool
 
 # ~~~~~~~~~~~~~~~~~~~~~~ DECOMPRESS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
