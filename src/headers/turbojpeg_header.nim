@@ -885,10 +885,10 @@ proc tjPlaneHeight*(componentID: cint; height: cint; subsamp: cint): cint {.impo
 ##  and #tjGetErrorCode().)
 proc tjEncodeYUV3_Impl(handle: tjhandle; srcBuf: pointer; width: cint; pitch: cint;
                   height: cint; pixelFormat: TJPF; dstBuf: pointer; pad: cint;
-                  subsamp: cint; flags: cint): cint {.importc: "tjEncodeYUV3".}
+                  subsamp: TJSAMP; flags: cint): cint {.importc: "tjEncodeYUV3".}
                   
-proc tjEncodeYUV3*(handle: tjhandle, srcBuf: pointer, width, pitch, height: SomeInteger, pixelFormat: TJPF; dstBuf: pointer, pad, subsamp, flags: SomeInteger): int {.inline.} =
-  result = tjEncodeYUV3_Impl(handle, srcBuf, width.cint, pitch.cint, height.cint, pixelFormat, dstBuf, pad.cint, subsamp.cint, flags.cint).int
+proc tjEncodeYUV3*(handle: tjhandle, srcBuf: pointer, width, pitch, height: SomeInteger, pixelFormat: TJPF; dstBuf: pointer, pad: SomeInteger, subsamp: TJSAMP, flags: SomeInteger): int {.inline.} =
+  result = tjEncodeYUV3_Impl(handle, srcBuf, width.cint, pitch.cint, height.cint, pixelFormat, dstBuf, pad.cint, subsamp, flags.cint).int
 
 
 ##  Encode an RGB or grayscale image into separate Y, U (Cb), and V (Cr) image
