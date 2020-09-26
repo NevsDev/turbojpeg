@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.2.0"
 author        = "Sven Keller"
 description   = "Use TurboJpeg in nim"
 license       = "libjpeg-turbo is covered by three compatible BSD-style open source licenses (see: LICENSE.md)"
@@ -10,4 +10,4 @@ srcDir        = "src"
 
 # Dependencies
 
-requires "nim >= 1.2.6"
+requires "nim >= 1.2.0"
