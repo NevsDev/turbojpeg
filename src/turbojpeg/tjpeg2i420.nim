@@ -63,7 +63,7 @@ proc tjpeg2i420*(jpeg_buffer: string, i420_buffer: var ptr UncheckedArray[uint8]
   result = tjpeg2i420(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, i420_buffer, i420_size, width, height)
 
 
-proc ti420FromFile*(filename: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
+proc tfile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
   var fileContent = readFile(filename)
   result = tjpeg2i420(fileContent[0].unsafeAddr, fileContent.len.uint, i420_buffer, i420_size, width, height)
 
