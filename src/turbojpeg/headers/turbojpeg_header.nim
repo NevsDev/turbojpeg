@@ -1074,24 +1074,26 @@ proc tjDecompress2_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culong;
                    dstBuf: pointer; width: cint; pitch: cint; height: cint; pixelFormat: TJPF; flags: cint): cint 
                    {.importc: "tjDecompress2".}
 
-proc tjDecompress2*(handle: tjhandle, jpegBuf: pointer, jpegSize: SomeInteger,
-                   dstBuf: pointer, width, height: SomeInteger, pixelFormat: TJPF = TJPF_RGB, flags: int32 = 0, pitch: int32 = 0): bool {.discardable, inline.} =
+proc tjDecompress2*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint,
+                   dstBuf: pointer, width, height: int, pixelFormat: TJPF = TJPF_RGB, flags: int = 0, pitch: int32 = 0): bool {.discardable, inline.} =
   # FLAGS:
   #   TJFLAG_BOTTOMUP* = 2, TJFLAG_FASTUPSAMPLE* = 256, TJFLAG_NOREALLOC* = 1024, TJFLAG_FASTDCT* = 2048
   #   TJFLAG_ACCURATEDCT* = 4096, TJFLAG_STOPONWARNING* = 8192, TJFLAG_PROGRESSIVE
-  result = tjDecompress2_Impl(handle, jpegBuf, jpegSize.culong, dstBuf, width.cint, pitch.cint, height.cint, pixelFormat, flags) == 0
+  result = tjDecompress2_Impl(handle, jpegBuf, jpegSize.culong, dstBuf, width.cint, pitch.cint, height.cint, pixelFormat, flags.cint) == 0
+
 proc tjDecompress2*(handle: tjhandle, jpegBuf: seq[char|uint8|byte] | string,
-                   dstBuf: seq[byte|char]|string|pointer, width, height: SomeInteger, pixelFormat: TJPF = TJPF_RGB, flags: int32 = 0, pitch: int32 = 0): bool {.discardable, inline.} =
+                   dstBuf: seq[byte|char]|string|pointer, 
+                   width, height: int, pixelFormat: TJPF = TJPF_RGB, flags: int = 0, pitch: int32 = 0): bool {.discardable, inline.} =
   # FLAGS:
   #   TJFLAG_BOTTOMUP* = 2, TJFLAG_FASTUPSAMPLE* = 256, TJFLAG_NOREALLOC* = 1024, TJFLAG_FASTDCT* = 2048
   #   TJFLAG_ACCURATEDCT* = 4096, TJFLAG_STOPONWARNING* = 8192, TJFLAG_PROGRESSIVE
   var srcAddr = when jpegBuf is string: jpegBuf[0].unsafeAddr
-  else: jpegBuf[0].addr
+  else: jpegBuf[0].addr.int
 
   var dstAddr = when dstBuf is pointer: dstBuf
   elif dstBuf is string: dstBuf[0].unsafeAddr
   else: dstBuf[0].unsafeAddr
-  result = tjDecompress2_Impl(handle, srcAddr, jpegBuf.len.culong, dstAddr, width.cint, pitch.cint, height.cint, pixelFormat, flags) == 0
+  result = tjDecompress2_Impl(handle, srcAddr, jpegBuf.len.culong, dstAddr, width.cint, pitch.cint, height.cint, pixelFormat, flags.cint) == 0
 
 
 
