@@ -753,11 +753,19 @@ proc tjCompressFromYUV*(handle: tjhandle; srcBuf: pointer, width, pad, height: i
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: ptr ptr cuchar; width: cint;
-                             strides: ptr cint; height: cint; subsamp: cint;
-                             jpegBuf: ptr ptr cuchar; jpegSize: ptr culong;
+proc tjCompressFromYUVPlanes_Impl(handle: tjhandle; srcPlanes: array[3, ptr UncheckedArray[uint]]; width: cint;
+                             strides: ptr cint; height: cint; subsamp: TJSAMP;
+                             jpegBuf: ptr ptr UncheckedArray[uint]; jpegSize: ptr culong;
                              jpegQual: cint; flags: cint): cint 
                              {.importc: "tjCompressFromYUVPlanes".}
+proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: array[3, ptr UncheckedArray[uint]], width: int, strides: var int, height: int; subsamp: TJSAMP,
+                             jpegBuf: ptr ptr UncheckedArray[uint], jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline.} = 
+  var 
+    strd: cint
+    size: culong
+  result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes, width.cint, strd.addr, height.cint, subsamp, jpegBuf, size.addr, jpegQual.cint, flags.cint) == 0
+  jpegSize = size.uint
+  strides = strd
 
 ##  The maximum size of the buffer (in bytes) required to hold a JPEG image with
 ##  the given parameters.  The number of bytes returned by this function is
