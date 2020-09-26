@@ -1,11 +1,10 @@
 import strformat
 import headers/turbojpeg_header
 
-var decompressor: tjhandle
-var compressor: tjhandle
+var decompressor {.threadvar.}: tjhandle
+var compressor {.threadvar.}: tjhandle
 
 proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: ptr ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool =
-  # Warning: single threaded converter 
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     width, height: int
@@ -16,10 +15,10 @@ proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: ptr ptr Unche
 
   if decompressor == nil: decompressor = tjInitDecompress()
 
-  tjDecompressHeader3(decompressor, jpeg_buffer, jpeg_size, width, height, subsample, colorspace)
+  if not tjDecompressHeader3(decompressor, jpeg_buffer, jpeg_size, width, height, subsample, colorspace):
+    echo tjGetErrorStr2(decompressor)
+    return false
 
-  # echo fmt"w: {width} h: {height} subsample: {subsample} color: {colorspace}"
-  
   yuv_sample = subsample;
   # Note: After testing, the designated sampling yuv YUV format only affects the buffer size, in fact or by itself JPEG YUV format conversion
   var buffSize = tjBufSizeYUV2(width, padding, height, subsample);
@@ -33,10 +32,12 @@ proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: ptr ptr Unche
       echo("alloc buffer failed.\n")
       return false
 
-  return tjDecompressToYUV2(decompressor, jpeg_buffer, jpeg_size, yuv_buffer, width, padding, height, flags) == 0
+  if tjDecompressToYUV2(decompressor, jpeg_buffer, jpeg_size, yuv_buffer, width, padding, height, flags) != 0:
+    echo tjGetErrorStr2(decompressor)
+    return false
+  return true
 
 proc tjpeg2yuv*(jpeg_buffer: string, yuv_buffer: ptr ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool {.inline.} =
-  # Warning: single threaded converter 
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   result = tjpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample)
  
@@ -54,4 +55,7 @@ proc tyuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint,
     echo &"we detect yuv size: {need_size}, but you give: {yuv_size}, check again."
     return false
  
-  result = tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer, jpeg_size, quality, flags) == 0
+  if tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer, jpeg_size, quality, flags) != 0:
+    echo tjGetErrorStr2(compressor)
+    return false
+  return true

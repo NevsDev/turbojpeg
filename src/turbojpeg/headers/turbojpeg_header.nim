@@ -84,20 +84,26 @@ type
     ##  4:4:4 chrominance subsampling (no chrominance subsampling).  The JPEG or
     ##  YUV image will contain one chrominance component for every pixel in the
     ##  source image.
+    
     TJSAMP_444 = 0,
+    
     ##  4:2:2 chrominance subsampling.  The JPEG or YUV image will contain one
     ##  chrominance component for every 2x1 block of pixels in the source image.
     TJSAMP_422, 
+    
     ##  4:2:0 chrominance subsampling.  The JPEG or YUV image will contain one
     ##  chrominance component for every 2x2 block of pixels in the source image.
     TJSAMP_420,
+    
     ##  Grayscale.  The JPEG or YUV image will contain no chrominance components.
     TJSAMP_GRAY,
+    
     ##  4:4:0 chrominance subsampling.  The JPEG or YUV image will contain one
     ##  chrominance component for every 1x2 block of pixels in the source image.
     ##
     ##  @note 4:4:0 subsampling is not fully accelerated in libjpeg-turbo.
     TJSAMP_440,
+    
     ##  4:1:1 chrominance subsampling.  The JPEG or YUV image will contain one
     ##  chrominance component for every 4x1 block of pixels in the source image.
     ##  JPEG images compressed with 4:1:1 subsampling will be almost exactly the
@@ -599,14 +605,14 @@ proc tjCompress2_Impl(handle: tjhandle; srcBuf: pointer; width, pitch, height: c
                  {.importc: "tjCompress2".}
                  
 type TJQuality* = range[1..100]
-proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width, height: SomeInteger, pixelFormat: TJPF, 
+proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width, height: int, pixelFormat: TJPF, 
                  jpegBuf: ptr ptr UncheckedArray[byte], jpegSize: var uint, jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int = 0, pitch: uint = 0): bool {.discardable, inline.} =
   var srcAddr = when srcBuf is pointer: srcBuf
   elif srcBuf is string: srcBuf[0].unsafeAddr
   else: srcBuf[0].addr
   result = tjCompress2_Impl(handle, srcAddr, width.cint, pitch.cint, height.cint, pixelFormat, jpegBuf, jpegSize.culong.addr, jpegSubsamp, jpegQual.cint, flags.cint) == 0
   
-proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width, height: SomeInteger, pixelFormat: TJPF, 
+proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width, height: int, pixelFormat: TJPF, 
                  jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int32 = 0, pitch: uint = 0): string {.inline.} =
   var
     outputJPGbuffer: ptr UncheckedArray[byte]
@@ -898,7 +904,8 @@ proc tjEncodeYUV3_Impl(handle: tjhandle; srcBuf: pointer; width: cint; pitch: ci
                   height: cint; pixelFormat: TJPF; dstBuf: pointer; pad: cint;
                   subsamp: TJSAMP; flags: cint): cint {.importc: "tjEncodeYUV3".}
                   
-proc tjEncodeYUV3*(handle: tjhandle, srcBuf: pointer, width, pitch, height: SomeInteger, pixelFormat: TJPF; dstBuf: pointer, pad: SomeInteger, subsamp: TJSAMP, flags: SomeInteger): int {.inline.} =
+proc tjEncodeYUV3*(handle: tjhandle, srcBuf: pointer, width, pitch, height: int, pixelFormat: TJPF; 
+                      dstBuf: pointer, pad: int, subsamp: TJSAMP, flags: int): int {.inline.} =
   result = tjEncodeYUV3_Impl(handle, srcBuf, width.cint, pitch.cint, height.cint, pixelFormat, dstBuf, pad.cint, subsamp, flags.cint).int
 
 
@@ -1000,14 +1007,18 @@ proc tjDecompressHeader3_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culo
                          jpegColorspace: ptr TJCS): cint 
                          {.importc: "tjDecompressHeader3".}
 
-proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: pointer | seq[char|uint8] | string, jpegSize: SomeInteger,
+proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint,
                          width, height: var int, jpegSubsamp: var TJSAMP, jpegColorspace: var TJCS): bool {.inline, discardable.} =
-  var buffAddr =  when jpegBuf is pointer: jpegBuf
-                  elif jpegBuf is string: jpegBuf[0].unsafeAddr
+  var h, w: cint
+  result = tjDecompressHeader3_Impl(handle, jpegBuf, jpegSize.culong, w.addr, h.addr, jpegSubsamp.addr, jpegColorspace.addr) == 0
+  width = w
+  height = h
+proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: seq[char|uint8] | string,
+                         width, height: var int, jpegSubsamp: var TJSAMP, jpegColorspace: var TJCS): bool {.inline, discardable.} =
+  var buffAddr =  when jpegBuf is string: jpegBuf[0].unsafeAddr
                   else: jpegBuf[0].addr
   var h, w: cint
-
-  result = tjDecompressHeader3_Impl(handle, jpegBuf, jpegSize.culong, w.addr, h.addr, jpegSubsamp.addr, jpegColorspace.addr) == 0
+  result = tjDecompressHeader3_Impl(handle, buffAddr, jpegBuf.len.culong, w.addr, h.addr, jpegSubsamp.addr, jpegColorspace.addr) == 0
   width = w
   height = h
 
@@ -1075,7 +1086,7 @@ proc tjDecompress2_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culong;
                    {.importc: "tjDecompress2".}
 
 proc tjDecompress2*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint,
-                   dstBuf: pointer, width, height: int, pixelFormat: TJPF = TJPF_RGB, flags: int = 0, pitch: int32 = 0): bool {.discardable, inline.} =
+                   dstBuf: pointer, width, height: int, pixelFormat: TJPF = TJPF_RGB, flags: int = 0, pitch: int = 0): bool {.discardable, inline.} =
   # FLAGS:
   #   TJFLAG_BOTTOMUP* = 2, TJFLAG_FASTUPSAMPLE* = 256, TJFLAG_NOREALLOC* = 1024, TJFLAG_FASTDCT* = 2048
   #   TJFLAG_ACCURATEDCT* = 4096, TJFLAG_STOPONWARNING* = 8192, TJFLAG_PROGRESSIVE
@@ -1083,7 +1094,7 @@ proc tjDecompress2*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint,
 
 proc tjDecompress2*(handle: tjhandle, jpegBuf: seq[char|uint8|byte] | string,
                    dstBuf: seq[byte|char]|string|pointer, 
-                   width, height: int, pixelFormat: TJPF = TJPF_RGB, flags: int = 0, pitch: int32 = 0): bool {.discardable, inline.} =
+                   width, height: int, pixelFormat: TJPF = TJPF_RGB, flags: int = 0, pitch: int = 0): bool {.discardable, inline.} =
   # FLAGS:
   #   TJFLAG_BOTTOMUP* = 2, TJFLAG_FASTUPSAMPLE* = 256, TJFLAG_NOREALLOC* = 1024, TJFLAG_FASTDCT* = 2048
   #   TJFLAG_ACCURATEDCT* = 4096, TJFLAG_STOPONWARNING* = 8192, TJFLAG_PROGRESSIVE

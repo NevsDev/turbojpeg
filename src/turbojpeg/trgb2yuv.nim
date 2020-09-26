@@ -1,10 +1,9 @@
 import headers/turbojpeg_header
 
-var compressor: tjhandle
+var compressor {.threadvar.}: tjhandle
 
 
 proc trgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: ptr ptr UncheckedArray[uint8], yuv_size: var uint, subsample: TJSAMP): bool =
-  # Warning: single threaded converter 
   # yuv_buffer will be assigned and or resized automaticly: yuv_buffer <-> yuv_size
   var
     flags = 0
@@ -25,5 +24,9 @@ proc trgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: ptr ptr Unch
       echo("alloc buffer failed.\n")
       return false
 
-  result = tjEncodeYUV3(compressor, rgb_buffer, width, 0, height, pixelfmt, yuv_buffer, padding, subsample, flags) == 0
+  if tjEncodeYUV3(compressor, rgb_buffer, width, 0, height, pixelfmt, yuv_buffer, padding, subsample, flags) != 0:
+    echo tjGetErrorStr2(compressor)
+    return false
+  return true
+
 

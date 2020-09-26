@@ -1,7 +1,7 @@
 import turbojpeg
 
 var
-  width, height: int32
+  width, height: int
   jpegSubsamp: TJSAMP
   colorSpace: TJCS
   jpegRaw = readFile("examples/example.jpg")

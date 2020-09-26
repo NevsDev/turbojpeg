@@ -1,16 +1,19 @@
 import headers/turbojpeg_header
-import os
 
-var decompressor: tjhandle
+var decompressor {.threadvar.}: tjhandle
+var compressor {.threadvar.}: tjhandle 
 
-var 
-  rgb_buffer: ptr UncheckedArray[uint8]
-  rgb_buffer_size: uint
-  rgb_buffer_size_max: uint
+type 
+  WorkingBuffer = object
+    buffer: ptr UncheckedArray[uint8]
+    buffer_size: uint
+    buffer_size_max: uint
+
+var
+  buffer {.threadvar.}: WorkingBuffer
 
 
-proc tjpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: ptr ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
-  # Warning: single threaded converter 
+proc tjpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     subsample: TJSAMP
@@ -19,36 +22,48 @@ proc tjpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: ptr ptr Unc
     padding = 1               # 1 or 4 can be, but is not 0
 
   if decompressor == nil: decompressor = tjInitDecompress()
+  if compressor == nil: compressor = tjInitCompress()
 
-  tjDecompressHeader3(decompressor, jpeg_buffer, jpeg_size, width, height, subsample, colorspace)
+  if not tjDecompressHeader3(decompressor, jpeg_buffer, jpeg_size, width, height, subsample, colorspace):
+    echo tjGetErrorStr2(decompressor)
+    return false
  
   var buffSize = (width * height * 3).uint
-  if rgb_buffer_size != buffSize:
-    rgb_buffer_size = buffSize
-    if rgb_buffer_size_max < buffSize:
-      if rgb_buffer == nil:
-        rgb_buffer = cast[ptr UncheckedArray[uint8]](alloc(rgb_buffer_size_max))
+  if buffer.buffer_size != buffSize:
+    buffer.buffer_size = buffSize
+    if buffer.buffer_size_max < buffSize:
+      buffer.buffer_size_max = buffSize
+      if buffer.buffer == nil:
+        buffer.buffer = cast[ptr UncheckedArray[uint8]](alloc(buffer.buffer_size_max))
       else:
-        rgb_buffer = cast[ptr UncheckedArray[uint8]](realloc(rgb_buffer, rgb_buffer_size_max))
-      if rgb_buffer == nil:
+        buffer.buffer = cast[ptr UncheckedArray[uint8]](realloc(buffer.buffer, buffer.buffer_size_max))
+      if buffer.buffer == nil:
         echo("alloc buffer failed.\n")
         return false
 
   var std_i420_size = (width * height * 3 div 2).uint
   if i420_size != std_i420_size:  # 12 bits per pixel
     i420_size = std_i420_size
-    if i420_buffer[] == nil:
-      i420_buffer[] = cast[ptr UncheckedArray[uint8]](alloc(std_i420_size))
+    if i420_buffer == nil:
+      i420_buffer = cast[ptr UncheckedArray[uint8]](alloc(i420_size))
     else:
-      i420_buffer[] = cast[ptr UncheckedArray[uint8]](realloc(i420_buffer[], std_i420_size))
+      i420_buffer = cast[ptr UncheckedArray[uint8]](realloc(i420_buffer, i420_size))
 
-  if tjDecompress2(decompressor, jpeg_buffer, jpeg_size, rgb_buffer, width, height, TJPF_RGB, TJFLAG_FASTDCT):
-    result = tjEncodeYUV3(decompressor, rgb_buffer, width, pitch = 0, height, TJPF_RGB, i420_buffer[], padding, TJSAMP_420, flags) == 0
+  if not tjDecompress2(decompressor, jpeg_buffer, jpeg_size, buffer.buffer, width, height, TJPF_RGB, flags, 0):
+    echo tjGetErrorStr2(decompressor)
+    return false
+
+  if tjEncodeYUV3(compressor, buffer.buffer, width, pitch = 0, height, TJPF_RGB, i420_buffer, padding, TJSAMP_420, flags) != 0:
+    echo tjGetErrorStr2(compressor)
+    return false
+  return true
 
 
-proc tjpeg2i420*(jpeg_buffer: string, i420_buffer: ptr ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
+proc tjpeg2i420*(jpeg_buffer: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
   result = tjpeg2i420(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, i420_buffer, i420_size, width, height)
 
-proc ti420FromFile*(filename: string, i420_buffer: ptr ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
+
+proc ti420FromFile*(filename: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
   var fileContent = readFile(filename)
   result = tjpeg2i420(fileContent[0].unsafeAddr, fileContent.len.uint, i420_buffer, i420_size, width, height)
+

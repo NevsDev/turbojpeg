@@ -1,3 +1,11 @@
 
+tests/**
+!tests/**.nims
+!tests/**.nim
+
+examples/**
+!examples/**.nims
+!examples/**.nim
+
 
 *.jpeg
