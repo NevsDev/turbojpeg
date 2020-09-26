@@ -6,13 +6,13 @@ template getBinPath(): TaintedString =
 
 when defined(Windows):
   when defined(m64):
-    {.passL:getBinPath()&"/bin/win64/libturbojpeg.a",
-      passL:getBinPath()&"/bin/win64/libturbojpeg.dll.a".}
+    {.passL:getBinPath()&"turbofpeg/bin/win64/libturbojpeg.a",
+      passL:getBinPath()&"turbofpeg/bin/win64/libturbojpeg.dll.a".}
   else:
-    {.passL:getBinPath()&"/bin/win32/libturbojpeg.a",
-      passL:getBinPath()&"/bin/win32/libturbojpeg.dll.a".}
+    {.passL:getBinPath()&"turbofpeg/bin/win32/libturbojpeg.a",
+      passL:getBinPath()&"turbofpeg/bin/win32/libturbojpeg.dll.a".}
 elif defined(Linux):
-  {.passL:getBinPath()&"/bin/linux/libturbojpeg.a".}
+  {.passL:getBinPath()&"turbofpeg/bin/linux/libturbojpeg.a".}
 
 elif defined(MacOsX):
   {.error: "MacOsX is not supported now".}
@@ -23,3 +23,8 @@ else:
   {.error: "Yout System is not supported now".}
 
 include headers/turbojpeg_header
+
+
+import turbojpeg/[tjpeg2yuv, trgb2yuv]
+
+export tjpeg2yuv, trgb2yuv

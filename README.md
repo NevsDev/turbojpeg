@@ -1,6 +1,6 @@
 Turbo-Jpeg
 ==========
-During the compilation time the program is linked with turbojpeg.
+During the compilationtime the program will link with turbojpeg.a.
 You don't need any compilation flags.
 Currently supported:
 - Linux

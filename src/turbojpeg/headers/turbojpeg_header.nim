@@ -673,11 +673,16 @@ proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjCompressFromYUV*(handle: tjhandle; srcBuf: ptr cuchar; width: cint; pad: cint;
-                       height: cint; subsamp: cint; jpegBuf: ptr ptr cuchar;
+proc tjCompressFromYUV_Impl(handle: tjhandle; srcBuf: pointer; width: cint; pad: cint;
+                       height: cint; subsamp: TJSAMP; jpegBuf: ptr pointer;
                        jpegSize: ptr culong; jpegQual: cint; flags: cint): cint 
                        {.importc: "tjCompressFromYUV".}
 
+proc tjCompressFromYUV*(handle: tjhandle; srcBuf: pointer, width, pad, height: int; subsamp: TJSAMP, jpegBuf: ptr pointer, jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline.} =
+  var jSize: culong
+  result = tjCompressFromYUV_Impl(handle, srcBuf, width.cint, pad.cint, height.cint, subsamp, jpegBuf, jSize.addr, jpegQual.cint, flags.cint) == 0 
+  jpegSize = jSize.uint
+  
 ##  Compress a set of Y, U (Cb), and V (Cr) image planes into a JPEG image.
 ##
 ##  @param handle a handle to a TurboJPEG compressor or transformer instance
@@ -768,7 +773,10 @@ proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: ptr ptr cuchar; width
 ##
 ##  @return the maximum size of the buffer (in bytes) required to hold the
 ##  image, or -1 if the arguments are out of bounds.
-proc tjBufSize*(width: cint; height: cint; jpegSubsamp: cint): culong {.importc: "tjBufSize".}
+proc tjBufSize_Impl*(width: cint; height: cint; jpegSubsamp: TJSAMP): culong {.importc: "tjBufSize".}
+
+proc tjBufSize*(width, height: int, subsamp: TJSAMP): uint {.inline.} =
+  result = tjBufSize_Impl(width.cint, height.cint, subsamp).uint
 
 ##  The size of the buffer (in bytes) required to hold a YUV planar image with
 ##  the given parameters.
@@ -785,7 +793,10 @@ proc tjBufSize*(width: cint; height: cint; jpegSubsamp: cint): culong {.importc:
 ##
 ##  @return the size of the buffer (in bytes) required to hold the image, or
 ##  -1 if the arguments are out of bounds.
-proc tjBufSizeYUV2*(width: cint; pad: cint; height: cint; subsamp: cint): culong {.importc: "tjBufSizeYUV2".}
+proc tjBufSizeYUV2_Impl(width: cint; pad: cint; height: cint; subsamp: TJSAMP): culong {.importc: "tjBufSizeYUV2".}
+
+proc tjBufSizeYUV2*(width, pad, height: int, subsamp: TJSAMP): uint {.inline.} =
+  result = tjBufSizeYUV2_Impl(width.cint, pad.cint, height.cint, subsamp).uint
 
 ##  The size of the buffer (in bytes) required to hold a YUV image plane with
 ##  the given parameters.
@@ -985,26 +996,21 @@ proc tjInitDecompress*(): tjhandle {.importc: "tjInitDecompress".}
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
 proc tjDecompressHeader3_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culong;
-                         width: ptr cint; height: ptr cint; jpegSubsamp: ptr cint;
-                         jpegColorspace: ptr cint): cint 
+                         width: ptr cint; height: ptr cint; jpegSubsamp: ptr TJSAMP;
+                         jpegColorspace: ptr TJCS): cint 
                          {.importc: "tjDecompressHeader3".}
 
-proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: pointer, jpegSize: SomeInteger,
-                         width, height: var int32, jpegSubsamp: var TJSAMP, jpegColorspace: var TJCS): bool {.inline, discardable.} =
-  var colSp, samp: int32
-  result = tjDecompressHeader3_Impl(handle, jpegBuf, jpegSize.culong, width.addr, height.addr, samp.addr, colSp.addr) == 0
-  jpegColorspace = colSp.TJCS
-  jpegSubsamp = samp.TJSAMP
-proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: seq[char|uint8] | string,
-                         width, height: var int32, jpegSubsamp: var TJSAMP, jpegColorspace: var TJCS): bool {.inline, discardable.} =
-  var colSp, samp: int32
-  when jpegBuf is string:
-    var buffAddr = jpegBuf[0].unsafeAddr
-  else:
-    var buffAddr = jpegBuf[0].addr
-  result = tjDecompressHeader3_Impl(handle, buffAddr, jpegBuf.len.culong, width.addr, height.addr, samp.addr, colSp.addr) == 0
-  jpegColorspace = colSp.TJCS
-  jpegSubsamp = samp.TJSAMP
+proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: pointer | seq[char|uint8] | string, jpegSize: SomeInteger,
+                         width, height: var int, jpegSubsamp: var TJSAMP, jpegColorspace: var TJCS): bool {.inline, discardable.} =
+  var buffAddr =  when jpegBuf is pointer: jpegBuf
+                  elif jpegBuf is string: jpegBuf[0].unsafeAddr
+                  else: jpegBuf[0].addr
+  var h, w: cint
+
+  result = tjDecompressHeader3_Impl(handle, jpegBuf, jpegSize.culong, w.addr, h.addr, jpegSubsamp.addr, jpegColorspace.addr) == 0
+  width = w
+  height = h
+
 
 ##  Returns a list of fractional scaling factors that the JPEG decompressor in
 ##  this implementation of TurboJPEG supports.
@@ -1133,10 +1139,13 @@ proc tjDecompress2*(handle: tjhandle, jpegBuf: seq[char|uint8|byte] | string,
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjDecompressToYUV2*(handle: tjhandle; jpegBuf: ptr cuchar; jpegSize: culong;
-                        dstBuf: ptr cuchar; width: cint; pad: cint; height: cint;
-                        flags: cint): cint 
-                        {.importc: "tjDecompressToYUV2".}
+proc tjDecompressToYUV2_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culong; 
+                              dstBuf: pointer; width: cint; pad: cint; height: cint;
+                              flags: cint): cint 
+                              {.importc: "tjDecompressToYUV2".}
+proc tjDecompressToYUV2*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint, dstBuf: pointer, width, pad, height, flags: int): int {.inline, discardable.} =
+  result = tjDecompressToYUV2_Impl(handle, jpegBuf, jpegSize.culong, dstBuf, width.cint, pad.cint, height.cint, flags.cint).int
+
 
 ##  Decompress a JPEG image into separate Y, U (Cb), and V (Cr) image
 ##  planes.  This function performs JPEG decompression but leaves out the color
@@ -1239,10 +1248,14 @@ proc tjDecompressToYUVPlanes*(handle: tjhandle; jpegBuf: ptr cuchar; jpegSize: c
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjDecodeYUV*(handle: tjhandle; srcBuf: ptr cuchar; pad: cint; subsamp: cint;
-                 dstBuf: ptr cuchar; width: cint; pitch: cint; height: cint;
-                 pixelFormat: cint; flags: cint): cint 
+proc tjDecodeYUV_Impl(handle: tjhandle; srcBuf: pointer; pad: cint; subsamp: TJSAMP;
+                 dstBuf: pointer; width: cint; pitch: cint; height: cint;
+                 pixelFormat: TJPF; flags: cint): cint 
                  {.importc: "tjDecodeYUV".}
+proc tjDecodeYUV*(handle: tjhandle, srcBuf: pointer, pad: int; subsamp: TJSAMP,
+                 dstBuf: pointer, width: int, pitch: int, height: int,
+                 pixelFormat: TJPF, flags: int): int {.inline.} =
+  result = tjDecodeYUV_Impl(handle, srcBuf, pad.cint, subsamp, dstBuf, width.cint, pitch.cint, height.cint, pixelFormat, flags.cint).int 
 
 ##  Decode a set of Y, U (Cb), and V (Cr) image planes into an RGB or grayscale
 ##  image.  This function uses the accelerated color conversion routines in the
