@@ -4,7 +4,7 @@ import headers/turbojpeg_header
 var decompressor {.threadvar.}: tjhandle
 
 
-proc tyuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: ptr ptr UncheckedArray[uint8], rgb_size: var uint, pixelfmt: TJPF): bool =
+proc tyuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint, pixelfmt: TJPF): bool =
   # rgb_buffer will be assigned and or resized automaticly: rgb_buffer <-> rgb_size
   var
     flags = 0
@@ -20,11 +20,11 @@ proc tyuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsam
   var rgbSize = width * height * tjPixelSize[pixelfmt.int]
   if rgb_size != rgbSize:
     rgb_size = rgbSize
-    if rgb_buffer[] == nil:
-      rgb_buffer[] = cast[ptr UncheckedArray[uint8]](alloc(rgb_size))
+    if rgb_buffer == nil:
+      rgb_buffer = cast[ptr UncheckedArray[uint8]](alloc(rgb_size))
     else:
-      rgb_buffer[] = cast[ptr UncheckedArray[uint8]](realloc(rgb_buffer[], rgb_size))
-    if rgb_buffer[] == nil:
+      rgb_buffer = cast[ptr UncheckedArray[uint8]](realloc(rgb_buffer, rgb_size))
+    if rgb_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
 
@@ -34,12 +34,12 @@ proc tyuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsam
   return true
 
 
-proc tyuv2rgb*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: ptr ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
+proc tyuv2rgb*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
   # Warning: single threaded converter 
   # rgb_buffer will be assigned and or resized automaticly: rgb_buffer <-> rgb_size
   result = tyuv2pixel(yuv_buffer, yuv_size, width, height, subsample, rgb_buffer, rgb_size, TJPF_RGB)
 
-proc tyuv2rgbx*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: ptr ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
+proc tyuv2rgbx*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
   # Warning: single threaded converter 
   # rgb_buffer will be assigned and or resized automaticly: rgb_buffer <-> rgb_size
   result = tyuv2pixel(yuv_buffer, yuv_size, width, height, subsample, rgb_buffer, rgb_size, TJPF_RGBX)

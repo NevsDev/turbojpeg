@@ -3,7 +3,7 @@ import headers/turbojpeg_header
 var compressor {.threadvar.}: tjhandle
 
 
-proc trgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: ptr ptr UncheckedArray[uint8], yuv_size: var uint, subsample: TJSAMP): bool =
+proc trgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, subsample: TJSAMP): bool =
   # yuv_buffer will be assigned and or resized automaticly: yuv_buffer <-> yuv_size
   var
     flags = 0
@@ -16,11 +16,11 @@ proc trgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: ptr ptr Unch
 
   if yuv_size != buffSize:
     yuv_size = buffSize
-    if yuv_buffer[] == nil:
-      yuv_buffer[] = cast[ptr UncheckedArray[uint8]](alloc(yuv_size))
+    if yuv_buffer == nil:
+      yuv_buffer = cast[ptr UncheckedArray[uint8]](alloc(yuv_size))
     else:
-      yuv_buffer[] = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer[], yuv_size))
-    if yuv_buffer[] == nil:
+      yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
+    if yuv_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
 

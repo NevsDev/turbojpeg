@@ -4,7 +4,7 @@ import headers/turbojpeg_header
 var decompressor {.threadvar.}: tjhandle
 var compressor {.threadvar.}: tjhandle
 
-proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: ptr ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool =
+proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     width, height: int
@@ -24,11 +24,11 @@ proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: ptr ptr Unche
   var buffSize = tjBufSizeYUV2(width, padding, height, subsample);
   if yuv_size != buffSize:
     yuv_size = buffSize
-    if yuv_buffer[] == nil:
-      yuv_buffer[] = cast[ptr UncheckedArray[uint8]](alloc(yuv_size))
+    if yuv_buffer == nil:
+      yuv_buffer = cast[ptr UncheckedArray[uint8]](alloc(yuv_size))
     else:
-      yuv_buffer[] = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer[], yuv_size))
-    if yuv_buffer[] == nil:
+      yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
+    if yuv_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
 
@@ -37,13 +37,13 @@ proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: ptr ptr Unche
     return false
   return true
 
-proc tjpeg2yuv*(jpeg_buffer: string, yuv_buffer: ptr ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool {.inline.} =
+proc tjpeg2yuv*(jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool {.inline.} =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   result = tjpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample)
  
 
 proc tyuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint, width, height: int, subsample: TJSAMP, 
-                jpeg_buffer: ptr ptr UncheckedArray[uint8], jpeg_size: var uint, quality: TJQuality): bool =
+                jpeg_buffer: var ptr UncheckedArray[uint8], jpeg_size: var uint, quality: TJQuality): bool =
   var 
     flags = 0
     padding = 1 # 1 or 4 can be, but is not 0
@@ -55,7 +55,7 @@ proc tyuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint,
     echo &"we detect yuv size: {need_size}, but you give: {yuv_size}, check again."
     return false
  
-  if tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer, jpeg_size, quality, flags) != 0:
+  if tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer.addr, jpeg_size, quality, flags) != 0:
     echo tjGetErrorStr2(compressor)
     return false
   return true
