@@ -56,3 +56,24 @@ proc jpegFile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8]
   var fileContent = readFile(filename)
   result = jpeg2i420(fileContent[0].unsafeAddr, fileContent.len.uint, i420_buffer, i420_size, width, height)
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+proc i4202jpeg*(i420_buffer: var pointer, width, height: int, jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality = 80): bool =
+  if compressor == nil: compressor = tjInitCompress()
+  result = tjCompressFromYUVPlanes(compressor, i420_buffer, width, strides = nil, height, TJSAMP_420, jpegBuf, jpegSize, jpegQual, 0) 
+  if not result:
+    echo tjGetErrorStr2(compressor)
+
+
+proc i4202jpegFile*(i420_buffer: var pointer, width, height: int, filename: string, jpegQual: TJQuality = 80): bool =
+  var 
+    jpegBuf: ptr UncheckedArray[uint8]
+    jpegSize: uint
+  if i4202jpeg(i420_buffer, width, height, jpegBuf, jpegSize, jpegQual):
+    var file = open(filename, fmWrite)
+    if file != nil:
+      discard file.writeBuffer(jpegBuf, jpegSize.int)
+      file.close()
+      return false
+    else:
+      return false

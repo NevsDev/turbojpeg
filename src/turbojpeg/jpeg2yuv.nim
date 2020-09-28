@@ -1,4 +1,3 @@
-import strformat
 import headers/turbojpeg_header
 import shared_handler
 
@@ -40,7 +39,7 @@ proc jpeg2yuv*(jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], y
   result = jpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample)
  
 
-proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint, width, height: int, subsample: TJSAMP, 
+proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: int, subsample: TJSAMP, 
                 jpeg_buffer: var ptr UncheckedArray[uint8], jpeg_size: var uint, quality: TJQuality): bool =
   var 
     flags = 0
@@ -48,10 +47,6 @@ proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint, 
  
   if compressor == nil: compressor = tjInitCompress()
 
-  var need_size = tjBufSizeYUV2(width, padding, height, subsample);
-  if need_size != yuv_size:
-    echo &"we detect yuv size: {need_size}, but you give: {yuv_size}, check again."
-    return false
 
   var maxJSize = tjBufSize()
   if maxJSize != jpeg_size:
@@ -61,8 +56,21 @@ proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint, 
       jpeg_buffer = cast[ptr UncheckedArray[uint8]](realloc(jpeg_buffer, jpeg_size))
     jpeg_size = maxJSize
 
- 
   if tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer, jpeg_size, quality, flags) != 0:
     echo tjGetErrorStr2(compressor)
     return false
   return true
+
+proc yuv2jpegFile*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: int, subsample: TJSAMP, filename: string, jpegQual: TJQuality = 80): bool =
+  var 
+    jpegBuf: ptr UncheckedArray[uint8]
+    jpegSize: uint
+  if yuv2jpeg(yuv_buffer, width, height, subsample, jpegBuf, jpegSize, jpegQual):
+    var file = open(filename, fmWrite)
+    if file != nil:
+      discard file.writeBuffer(jpegBuf, jpegSize.int)
+      file.close()
+      return false
+    else:
+      return false
+

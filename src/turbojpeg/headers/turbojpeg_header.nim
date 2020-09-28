@@ -789,11 +789,11 @@ proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: ptr UncheckedArray[pt
   result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes, width.cint, strides[0].addr, height.cint, subsamp, jpegBuf.addr, size.addr, jpegQual.cint, flags.cint) == 0
   jpegSize = size.uint
 
-proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: ptr pointer, width: int, strides: ptr UncheckedArray[cint], height: int; subsamp: TJSAMP,
+proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: var pointer, width: int, strides: ptr UncheckedArray[cint], height: int; subsamp: TJSAMP,
                              jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline, discardable.} = 
   var 
     size: culong
-  result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes, width.cint, strides[0].addr, height.cint, subsamp, jpegBuf.addr, size.addr, jpegQual.cint, flags.cint) == 0
+  result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes.addr, width.cint, strides[0].addr, height.cint, subsamp, jpegBuf.addr, size.addr, jpegQual.cint, flags.cint) == 0
   jpegSize = size.uint
 
 ##  The maximum size of the buffer (in bytes) required to hold a JPEG image with
