@@ -1,10 +1,8 @@
 import strformat
 import headers/turbojpeg_header
+import shared_handler
 
-var decompressor {.threadvar.}: tjhandle
-
-
-proc tyuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint, pixelfmt: TJPF): bool =
+proc yuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint, pixelfmt: TJPF): bool =
   # rgb_buffer will be assigned and or resized automaticly: rgb_buffer <-> rgb_size
   var
     flags = 0
@@ -34,12 +32,10 @@ proc tyuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsam
   return true
 
 
-proc tyuv2rgb*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
-  # Warning: single threaded converter 
+proc yuv2rgb*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
   # rgb_buffer will be assigned and or resized automaticly: rgb_buffer <-> rgb_size
-  result = tyuv2pixel(yuv_buffer, yuv_size, width, height, subsample, rgb_buffer, rgb_size, TJPF_RGB)
+  result = yuv2pixel(yuv_buffer, yuv_size, width, height, subsample, rgb_buffer, rgb_size, TJPF_RGB)
 
-proc tyuv2rgbx*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
-  # Warning: single threaded converter 
+proc yuv2rgba*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint): bool {.inline.} =
   # rgb_buffer will be assigned and or resized automaticly: rgb_buffer <-> rgb_size
-  result = tyuv2pixel(yuv_buffer, yuv_size, width, height, subsample, rgb_buffer, rgb_size, TJPF_RGBX)
+  result = yuv2pixel(yuv_buffer, yuv_size, width, height, subsample, rgb_buffer, rgb_size, TJPF_RGBA)

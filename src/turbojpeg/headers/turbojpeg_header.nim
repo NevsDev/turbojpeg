@@ -521,6 +521,29 @@ type
         arrayRegion: tjregion; planeRegion: tjregion; componentIndex: cint;
         transformIndex: cint; transform: ptr tjtransform): cint
 
+##  Allocate an image buffer for use with TurboJPEG.  You should always use
+##  this function to allocate the JPEG destination buffer(s) for the compression
+##  and transform functions unless you are disabling automatic buffer
+##  (re)allocation (by setting #TJFLAG_NOREALLOC.)
+##
+##  @param bytes the number of bytes to allocate
+##
+##  @return a pointer to a newly-allocated buffer with the specified number of
+##  bytes.
+##
+##  @sa tjFree()
+proc tjAlloc*(bytes: cint): ptr cuchar {.importc: "tjAlloc".}
+
+##  Free an image buffer previously allocated by TurboJPEG.  You should always
+##  use this function to free JPEG destination buffer(s) that were automatically
+##  (re)allocated by the compression and transform functions or that were
+##  manually allocated using #tjAlloc().
+##
+##  @param buffer address of the buffer to free.  If the address is NULL, then
+##  this function has no effect.
+##
+##  @sa tjAlloc()
+proc tjFree*(buffer: pointer) {.importc: "tjFree".}
 
 ##  TurboJPEG instance handle
 type
@@ -605,21 +628,21 @@ proc tjCompress2_Impl(handle: tjhandle; srcBuf: pointer; width, pitch, height: c
                  {.importc: "tjCompress2".}
                  
 type TJQuality* = range[1..100]
-proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width, height: int, pixelFormat: TJPF, 
-                 jpegBuf: ptr ptr UncheckedArray[byte], jpegSize: var uint, jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int = 0, pitch: uint = 0): bool {.discardable, inline.} =
+proc tjCompress2*(handle: tjhandle, srcBuf: pointer | ptr uint8 | string, width, height: int, pixelFormat: TJPF, 
+                 jpegBuf: var ptr UncheckedArray[byte], jpegSize: var uint, jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int = 0, pitch: uint = 0): bool {.discardable, inline.} =
   var srcAddr = when srcBuf is pointer: srcBuf
-  elif srcBuf is string: srcBuf[0].unsafeAddr
-  else: srcBuf[0].addr
-  result = tjCompress2_Impl(handle, srcAddr, width.cint, pitch.cint, height.cint, pixelFormat, jpegBuf, jpegSize.culong.addr, jpegSubsamp, jpegQual.cint, flags.cint) == 0
+                elif srcBuf is string: srcBuf[0].unsafeAddr
+  result = tjCompress2_Impl(handle, srcAddr, width.cint, pitch.cint, height.cint, pixelFormat, jpegBuf.addr, jpegSize.culong.addr, jpegSubsamp, jpegQual.cint, flags.cint) == 0
   
-proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string|seq[byte|char], width, height: int, pixelFormat: TJPF, 
+proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string, width, height: int, pixelFormat: TJPF, 
                  jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int32 = 0, pitch: uint = 0): string {.inline.} =
   var
     outputJPGbuffer: ptr UncheckedArray[byte]
     jpegSize: culong
-  if tjCompress2(handle, srcBuf, width, height, pixelFormat, outputJPGbuffer.addr, jpegSize, jpegSubsamp, jpegQual, flags.cint, pitch):
+  if tjCompress2(handle, srcBuf, width, height, pixelFormat, outputJPGbuffer, jpegSize, jpegSubsamp, jpegQual, flags.cint, pitch):
     result.setLen(jpegSize)
     copyMem(result[0].addr, outputJPGbuffer[0].addr, jpegSize)
+    tjFree(outputJPGbuffer)
 
 ##  Compress a YUV planar image into a JPEG image.
 ##
@@ -684,9 +707,9 @@ proc tjCompressFromYUV_Impl(handle: tjhandle; srcBuf: pointer; width: cint; pad:
                        jpegSize: ptr culong; jpegQual: cint; flags: cint): cint 
                        {.importc: "tjCompressFromYUV".}
 
-proc tjCompressFromYUV*(handle: tjhandle; srcBuf: pointer, width, pad, height: int; subsamp: TJSAMP, jpegBuf: ptr pointer, jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline.} =
+proc tjCompressFromYUV*(handle: tjhandle; srcBuf: pointer, width, pad, height: int; subsamp: TJSAMP, jpegBuf: var pointer, jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline.} =
   var jSize: culong
-  result = tjCompressFromYUV_Impl(handle, srcBuf, width.cint, pad.cint, height.cint, subsamp, jpegBuf, jSize.addr, jpegQual.cint, flags.cint) == 0 
+  result = tjCompressFromYUV_Impl(handle, srcBuf, width.cint, pad.cint, height.cint, subsamp, jpegBuf.addr, jSize.addr, jpegQual.cint, flags.cint) == 0 
   jpegSize = jSize.uint
   
 ##  Compress a set of Y, U (Cb), and V (Cr) image planes into a JPEG image.
@@ -753,19 +776,25 @@ proc tjCompressFromYUV*(handle: tjhandle; srcBuf: pointer, width, pad, height: i
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjCompressFromYUVPlanes_Impl(handle: tjhandle; srcPlanes: array[3, ptr UncheckedArray[uint]]; width: cint;
+proc tjCompressFromYUVPlanes_Impl(handle: tjhandle; srcPlanes: pointer; width: cint;
                              strides: ptr cint; height: cint; subsamp: TJSAMP;
-                             jpegBuf: ptr ptr UncheckedArray[uint]; jpegSize: ptr culong;
+                             jpegBuf: ptr ptr UncheckedArray[uint8]; jpegSize: ptr culong;
                              jpegQual: cint; flags: cint): cint 
                              {.importc: "tjCompressFromYUVPlanes".}
-proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: array[3, ptr UncheckedArray[uint]], width: int, strides: var int, height: int; subsamp: TJSAMP,
-                             jpegBuf: ptr ptr UncheckedArray[uint], jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline.} = 
+
+proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: ptr UncheckedArray[ptr UncheckedArray[uint8]], width: int, strides: ptr UncheckedArray[cint], height: int; subsamp: TJSAMP,
+                             jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline, discardable.} = 
   var 
-    strd: cint
     size: culong
-  result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes, width.cint, strd.addr, height.cint, subsamp, jpegBuf, size.addr, jpegQual.cint, flags.cint) == 0
+  result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes, width.cint, strides[0].addr, height.cint, subsamp, jpegBuf.addr, size.addr, jpegQual.cint, flags.cint) == 0
   jpegSize = size.uint
-  strides = strd
+
+proc tjCompressFromYUVPlanes*(handle: tjhandle; srcPlanes: ptr pointer, width: int, strides: ptr UncheckedArray[cint], height: int; subsamp: TJSAMP,
+                             jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality, flags: int): bool {.inline, discardable.} = 
+  var 
+    size: culong
+  result = tjCompressFromYUVPlanes_Impl(handle, srcPlanes, width.cint, strides[0].addr, height.cint, subsamp, jpegBuf.addr, size.addr, jpegQual.cint, flags.cint) == 0
+  jpegSize = size.uint
 
 ##  The maximum size of the buffer (in bytes) required to hold a JPEG image with
 ##  the given parameters.  The number of bytes returned by this function is
@@ -831,7 +860,10 @@ proc tjBufSizeYUV2*(width, pad, height: int, subsamp: TJSAMP): uint {.inline.} =
 ##
 ##  @return the size of the buffer (in bytes) required to hold the YUV image
 ##  plane, or -1 if the arguments are out of bounds.
-proc tjPlaneSizeYUV*(componentID: cint; width: cint; stride: cint; height: cint; subsamp: cint): culong {.importc: "tjPlaneSizeYUV".}
+proc tjPlaneSizeYUV_Impl(componentID: cint; width: cint; stride: cint; height: cint; subsamp: TJSAMP): culong {.importc: "tjPlaneSizeYUV".}
+
+proc tjPlaneSizeYUV*(componentID, width, stride, height: int, subsamp: TJSAMP): uint {.inline.} =
+  tjPlaneSizeYUV_Impl(componentID.cint, width.cint, stride.cint, height.cint, subsamp).culong
 
 ##  The plane width of a YUV image plane with the given parameters.  Refer to
 ##  @ref YUVnotes "YUV Image Format Notes" for a description of plane width.
@@ -845,7 +877,10 @@ proc tjPlaneSizeYUV*(componentID: cint; width: cint; stride: cint; height: cint;
 ##
 ##  @return the plane width of a YUV image plane with the given parameters, or
 ##  -1 if the arguments are out of bounds.
-proc tjPlaneWidth*(componentID: cint; width: cint; subsamp: cint): cint {.importc: "tjPlaneWidth".}
+proc tjPlaneWidth_Impl(componentID: cint; width: cint; subsamp: TJSAMP): cint {.importc: "tjPlaneWidth".}
+
+proc tjPlaneWidth*(componentID, width: int, subsamp: TJSAMP): int {.inline.} =
+  tjPlaneWidth_Impl(componentID.cint, width.cint, subsamp).int
 
 ##  The plane height of a YUV image plane with the given parameters.  Refer to
 ##  @ref YUVnotes "YUV Image Format Notes" for a description of plane height.
@@ -859,7 +894,10 @@ proc tjPlaneWidth*(componentID: cint; width: cint; subsamp: cint): cint {.import
 ##
 ##  @return the plane height of a YUV image plane with the given parameters, or
 ##  -1 if the arguments are out of bounds.
-proc tjPlaneHeight*(componentID: cint; height: cint; subsamp: cint): cint {.importc: "tjPlaneHeight".}
+proc tjPlaneHeight_Impl(componentID: cint; height: cint; subsamp: TJSAMP): cint {.importc: "tjPlaneHeight".}
+
+proc tjPlaneHeight*(componentID, height: int, subsamp: TJSAMP): int {.inline.} = 
+  tjPlaneHeight_Impl(componentID.cint, height.cint, subsamp).int
 
 ##  Encode an RGB or grayscale image into a YUV planar image.  This function
 ##  uses the accelerated color conversion routines in the underlying
@@ -971,14 +1009,12 @@ proc tjEncodeYUV3*(handle: tjhandle, srcBuf: pointer, width, pitch, height: int,
 ##  and #tjGetErrorCode().)
 proc tjEncodeYUVPlanes_Impl(handle: tjhandle; srcBuf: pointer; width: cint; pitch: cint;
                        height: cint; pixelFormat: TJPF; dstPlanes: ptr pointer;
-                       strides: ptr cint; subsamp: cint; flags: cint): cint 
+                       strides: ptr cint; subsamp: TJSAMP; flags: cint): cint 
                        {.importc: "tjEncodeYUVPlanes".}
 
-proc tjEncodeYUVPlanes*(handle: tjhandle; srcBuf: pointer; width, pitch, height: int, pixelFormat: TJPF, dstPlanes: ptr pointer,
-                       strides: var int, subsamp, flags: int): int {.inline.} =
-  var strd: cint
-  result = tjEncodeYUVPlanes_Impl(handle, srcBuf, width.cint, pitch.cint, height.cint, pixelFormat, dstPlanes, strd.addr, subsamp.cint, flags.cint).int
-  strides = strd.int
+proc tjEncodeYUVPlanes*(handle: tjhandle; srcBuf: pointer, width, pitch, height: int, pixelFormat: TJPF, dstPlanes: ptr pointer,
+                       strides: ptr UncheckedArray[cint], subsamp: TJSAMP, flags: int): int {.inline.} =
+  result = tjEncodeYUVPlanes_Impl(handle, srcBuf, width.cint, pitch.cint, height.cint, pixelFormat, dstPlanes, strides[0].addr, subsamp, flags.cint).int
 
 ##  Create a TurboJPEG decompressor instance.
 ##
@@ -1015,7 +1051,7 @@ proc tjDecompressHeader3_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culo
                          jpegColorspace: ptr TJCS): cint 
                          {.importc: "tjDecompressHeader3".}
 
-proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint,
+proc tjDecompressHeader3*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint|int,
                          width, height: var int, jpegSubsamp: var TJSAMP, jpegColorspace: var TJCS): bool {.inline, discardable.} =
   var h, w: cint
   result = tjDecompressHeader3_Impl(handle, jpegBuf, jpegSize.culong, w.addr, h.addr, jpegSubsamp.addr, jpegColorspace.addr) == 0
@@ -1218,10 +1254,17 @@ proc tjDecompressToYUV2*(handle: tjhandle, jpegBuf: pointer, jpegSize: uint, dst
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjDecompressToYUVPlanes*(handle: tjhandle; jpegBuf: ptr cuchar; jpegSize: culong;
-                             dstPlanes: ptr ptr cuchar; width: cint;
+proc tjDecompressToYUVPlanes_Impl(handle: tjhandle; jpegBuf: pointer; jpegSize: culong;
+                             dstPlanes: pointer; width: cint;
                              strides: ptr cint; height: cint; flags: cint): cint 
                              {.importc: "tjDecompressToYUVPlanes".}
+
+proc tjDecompressToYUVPlanes*(handle: tjhandle, jpegBuf: pointer|ptr uint8, jpegSize: uint, dstPlanes: ptr UncheckedArray[ptr UncheckedArray[uint8]], width: int, strides: ptr UncheckedArray[cint], height, flags: int): bool {.inline.} = 
+  result = tjDecompressToYUVPlanes_Impl(handle, jpegBuf, jpegSize.culong, dstPlanes, width.cint, strides[0].addr, height.cint, flags.cint) == 0 
+
+proc tjDecompressToYUVPlanes*(handle: tjhandle, jpegBuf: string, dstPlanes: ptr UncheckedArray[ptr UncheckedArray[uint8]], width: int, strides: ptr UncheckedArray[cint], height, flags: int): bool {.inline.} = 
+  result = tjDecompressToYUVPlanes_Impl(handle, jpegBuf[0].unsafeAddr, jpegBuf.len.culong, dstPlanes, width.cint, strides[0].addr, height.cint, flags.cint) == 0 
+
 
 ##  Decode a YUV planar image into an RGB or grayscale image.  This function
 ##  uses the accelerated color conversion routines in the underlying
@@ -1273,7 +1316,7 @@ proc tjDecodeYUV_Impl(handle: tjhandle; srcBuf: pointer; pad: cint; subsamp: TJS
                  dstBuf: pointer; width: cint; pitch: cint; height: cint;
                  pixelFormat: TJPF; flags: cint): cint 
                  {.importc: "tjDecodeYUV".}
-proc tjDecodeYUV*(handle: tjhandle, srcBuf: pointer, pad: int; subsamp: TJSAMP,
+proc tjDecodeYUV*(handle: tjhandle, srcBuf: pointer | ptr uint8, pad: int; subsamp: TJSAMP,
                  dstBuf: pointer, width: int, pitch: int, height: int,
                  pixelFormat: TJPF, flags: int): int {.inline.} =
   result = tjDecodeYUV_Impl(handle, srcBuf, pad.cint, subsamp, dstBuf, width.cint, pitch.cint, height.cint, pixelFormat, flags.cint).int 
@@ -1410,18 +1453,7 @@ proc tjTransformProc*(handle: tjhandle; jpegBuf: ptr cuchar; jpegSize: culong; n
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2().)
 proc tjDestroy*(handle: tjhandle): cint {.importc: "tjDestroy",discardable.}
 
-##  Allocate an image buffer for use with TurboJPEG.  You should always use
-##  this function to allocate the JPEG destination buffer(s) for the compression
-##  and transform functions unless you are disabling automatic buffer
-##  (re)allocation (by setting #TJFLAG_NOREALLOC.)
-##
-##  @param bytes the number of bytes to allocate
-##
-##  @return a pointer to a newly-allocated buffer with the specified number of
-##  bytes.
-##
-##  @sa tjFree()
-proc tjAlloc*(bytes: cint): ptr cuchar {.importc: "tjAlloc".}
+
 
 ##  Load an uncompressed image from disk into memory.
 ##
@@ -1501,16 +1533,7 @@ proc tjSaveImage*(filename: cstring; buffer: ptr cuchar; width: cint; pitch: cin
                  height: cint; pixelFormat: cint; flags: cint): cint 
                  {.importc: "tjSaveImage".}
 
-##  Free an image buffer previously allocated by TurboJPEG.  You should always
-##  use this function to free JPEG destination buffer(s) that were automatically
-##  (re)allocated by the compression and transform functions or that were
-##  manually allocated using #tjAlloc().
-##
-##  @param buffer address of the buffer to free.  If the address is NULL, then
-##  this function has no effect.
-##
-##  @sa tjAlloc()
-proc tjFree*(buffer: ptr cuchar) {.importc: "tjFree".}
+
 
 ##  Returns a descriptive error message explaining why the last command failed.
 ##

@@ -7,5 +7,5 @@ var
   i420_img_size: uint # = width * height * 3 div 2  # 12 bits per pixel
   pictureData: ptr UncheckedArray[uint8]
 
-echo tfile2i420("examples/example.jpg", pictureData, i420_img_size, width, height)
+echo jpegFile2i420("examples/example.jpg", pictureData, i420_img_size, width, height)
 

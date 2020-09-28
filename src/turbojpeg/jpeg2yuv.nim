@@ -1,10 +1,8 @@
 import strformat
 import headers/turbojpeg_header
+import shared_handler
 
-var decompressor {.threadvar.}: tjhandle
-var compressor {.threadvar.}: tjhandle
-
-proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool =
+proc jpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     width, height: int
@@ -37,12 +35,12 @@ proc tjpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr Unche
     return false
   return true
 
-proc tjpeg2yuv*(jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool {.inline.} =
+proc jpeg2yuv*(jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool {.inline.} =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
-  result = tjpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample)
+  result = jpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample)
  
 
-proc tyuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint, width, height: int, subsample: TJSAMP, 
+proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint, width, height: int, subsample: TJSAMP, 
                 jpeg_buffer: var ptr UncheckedArray[uint8], jpeg_size: var uint, quality: TJQuality): bool =
   var 
     flags = 0
@@ -54,8 +52,17 @@ proc tyuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], yuv_size: uint,
   if need_size != yuv_size:
     echo &"we detect yuv size: {need_size}, but you give: {yuv_size}, check again."
     return false
+
+  var maxJSize = tjBufSize()
+  if maxJSize != jpeg_size:
+    if jpeg_buffer == nil:
+      jpeg_buffer = cast[ptr UncheckedArray[uint8]](alloc(jpeg_size))
+    elif jpeg_size < maxJSize:
+      jpeg_buffer = cast[ptr UncheckedArray[uint8]](realloc(jpeg_buffer, jpeg_size))
+    jpeg_size = maxJSize
+
  
-  if tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer.addr, jpeg_size, quality, flags) != 0:
+  if tjCompressFromYUV(compressor, yuv_buffer, width, padding, height, subsample, jpeg_buffer, jpeg_size, quality, flags) != 0:
     echo tjGetErrorStr2(compressor)
     return false
   return true

@@ -25,6 +25,6 @@ else:
 include turbojpeg/headers/turbojpeg_header
 
 
-import turbojpeg/[tjpeg2i420, tjpeg2yuv, trgb2yuv, tyuv2pixel]
+import turbojpeg/[jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx]
 
-export tjpeg2i420, tjpeg2yuv, trgb2yuv, tyuv2pixel
+export jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx

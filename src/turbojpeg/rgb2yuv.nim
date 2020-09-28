@@ -1,9 +1,8 @@
 import headers/turbojpeg_header
+import shared_handler
 
-var compressor {.threadvar.}: tjhandle
 
-
-proc trgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, subsample: TJSAMP): bool =
+proc rgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, subsample: TJSAMP): bool =
   # yuv_buffer will be assigned and or resized automaticly: yuv_buffer <-> yuv_size
   var
     flags = 0

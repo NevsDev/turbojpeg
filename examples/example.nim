@@ -35,14 +35,14 @@ var
 var compHandle = tjInitCompress()
 
 success = tjCompress2(compHandle, rawRGBbuffer, width, height, pixelFormat = TJPF_RGB, 
-                outputJPGbuffer.addr, jpegSize, jpegSubsamp = TJSAMP_444, jpegQual = 80, flags = 0, pitch = 0)
+                outputJPGbuffer, jpegSize, jpegSubsamp = TJSAMP_444, jpegQual = 80, flags = 0, pitch = 0)
 # or compress direct to string
 var rawImage: string = tjCompress2(compHandle, rawRGBbuffer, width, height, pixelFormat = TJPF_RGB, 
                                     jpegSubsamp = TJSAMP_444, jpegQual = 80, flags = 0, pitch = 0)
 
 # write File to storage
 var file = open("compressed_img.jpeg", fmWrite)
-assert(file.writeBuffer(outputJPGbuffer[0].addr, jpegSize) == jpegSize.int)
+assert(file.writeBuffer(outputJPGbuffer, jpegSize) == jpegSize.int)
 file.close()
 
 writeFile("compress_direct_img.jpeg", rawImage)

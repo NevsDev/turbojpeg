@@ -1,19 +1,8 @@
 import headers/turbojpeg_header
-
-var decompressor {.threadvar.}: tjhandle
-var compressor {.threadvar.}: tjhandle 
-
-type 
-  WorkingBuffer = object
-    buffer: ptr UncheckedArray[uint8]
-    buffer_size: uint
-    buffer_size_max: uint
-
-var
-  buffer {.threadvar.}: WorkingBuffer
+import shared_handler
 
 
-proc tjpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
+proc jpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     subsample: TJSAMP
@@ -59,11 +48,11 @@ proc tjpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr Unc
   return true
 
 
-proc tjpeg2i420*(jpeg_buffer: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
-  result = tjpeg2i420(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, i420_buffer, i420_size, width, height)
+proc jpeg2i420*(jpeg_buffer: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
+  result = jpeg2i420(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, i420_buffer, i420_size, width, height)
 
 
-proc tfile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
+proc jpegFile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int): bool =
   var fileContent = readFile(filename)
-  result = tjpeg2i420(fileContent[0].unsafeAddr, fileContent.len.uint, i420_buffer, i420_size, width, height)
+  result = jpeg2i420(fileContent[0].unsafeAddr, fileContent.len.uint, i420_buffer, i420_size, width, height)
 
