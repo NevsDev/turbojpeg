@@ -58,18 +58,20 @@ proc jpegFile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-proc i4202jpeg*(i420_buffer: var pointer, width, height: int, jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality = 80): bool =
+proc i4202jpeg*(i420_buffer: ptr UncheckedArray[ptr UncheckedArray[uint8]], width, height: int, jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality = 80, strides: ptr UncheckedArray[cint] = nil): bool =
   if compressor == nil: compressor = tjInitCompress()
-  result = tjCompressFromYUVPlanes(compressor, i420_buffer, width, strides = nil, height, TJSAMP_420, jpegBuf, jpegSize, jpegQual, 0) 
+  result = tjCompressFromYUVPlanes(compressor, i420_buffer, width, strides, height, TJSAMP_420, jpegBuf, jpegSize, jpegQual, 0) 
   if not result:
     echo tjGetErrorStr2(compressor)
+proc i4202jpeg*(i420_buffer: array[3, ptr UncheckedArray[uint8]], width, height: int, jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality = 80, strides: array[3, cint]): bool =
+  i4202jpeg(cast[ptr UncheckedArray[ptr UncheckedArray[uint8]]](i420_buffer[0].unsafeAddr), width, height, jpegBuf, jpegSize, jpegQual, cast[ptr UncheckedArray[cint]](strides[0].unsafeAddr))
 
 
-proc i4202jpegFile*(i420_buffer: var pointer, width, height: int, filename: string, jpegQual: TJQuality = 80): bool =
+proc i4202jpegFile*(i420_buffer: ptr UncheckedArray[ptr UncheckedArray[uint8]], width, height: int, filename: string, jpegQual: TJQuality = 80, strides: ptr UncheckedArray[cint] = nil): bool =
   var 
     jpegBuf: ptr UncheckedArray[uint8]
     jpegSize: uint
-  if i4202jpeg(i420_buffer, width, height, jpegBuf, jpegSize, jpegQual):
+  if i4202jpeg(i420_buffer, width, height, jpegBuf, jpegSize, jpegQual, strides):
     var file = open(filename, fmWrite)
     if file != nil:
       discard file.writeBuffer(jpegBuf, jpegSize.int)
@@ -77,3 +79,5 @@ proc i4202jpegFile*(i420_buffer: var pointer, width, height: int, filename: stri
       return false
     else:
       return false
+proc i4202jpegFile*(i420_buffer: array[3, ptr UncheckedArray[uint8]], width, height: int, filename: string, jpegQual: TJQuality = 80, strides: array[3, cint]): bool =
+  i4202jpegFile(cast[ptr UncheckedArray[ptr UncheckedArray[uint8]]](i420_buffer[0].unsafeAddr), width, height, filename, jpegQual, cast[ptr UncheckedArray[cint]](strides[0].unsafeAddr))
