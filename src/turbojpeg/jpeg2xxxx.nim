@@ -40,7 +40,7 @@ proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8 | ptr char, jpeg_size: uint, fo
 
 proc maxJpegSize*(width, height: int): int = TJBUFSIZE(width.cint, height.cint).int
 
-proc xxxx2jpeg*(format: TJPF, buffer: pointer | ptr uint8 |  ptr UncheckedArray[uint8] | string, width, height: int, jpeg_buffer: var ptr UncheckedArray[byte], buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool  =
+proc xxxx2jpeg*(format: TJPF, buffer: pointer | ptr uint8 | ptr UncheckedArray[uint8] | string, width, height: int, jpeg_buffer: var ptr UncheckedArray[byte], buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool  =
   if compressor == nil: compressor = tjInitCompress()
 
   if tjCompress2(compressor, buffer, width, height, pixelFormat = format, jpeg_buffer, buffer_size, jpegSubsamp = TJSAMP_444, quality, flags):
@@ -70,7 +70,7 @@ proc xxxx2jpegFile*(format: TJPF, buffer: pointer | ptr uint8 |  ptr UncheckedAr
 proc rgb2jpegFile*(rgb_buffer: ptr UncheckedArray[uint8] | pointer | ptr uint8 | string, width, height: int, filename: string, quality: TJQuality = 80, flags = 0): bool {.inline.} =
   xxxx2jpegFile(TJPF_RGB, rgb_buffer, width, height, filename, quality, flags)
 
-proc rgb2jpeg*(rgb_buffer: ptr UncheckedArray[uint8] | pointer | ptr uint8 | string, width, height: int, jpeg_buffer: var ptr UncheckedArray[byte] | var pointer, buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool {.inline.} =
+proc rgb2jpeg*(rgb_buffer: ptr UncheckedArray[uint8] | pointer | ptr uint8 | string, width, height: int, jpeg_buffer: var ptr UncheckedArray[byte], buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool {.inline.} =
   xxxx2jpeg(TJPF_RGB, rgb_buffer, width, height, jpeg_buffer, buffer_size, quality, flags)
 
 proc rgb2jpeg*(rgb_buffer: ptr UncheckedArray[uint8] | pointer | ptr uint8 | string, width, height: int, jpeg_buffer: var string, quality: TJQuality = 80, flags = 0): bool {.inline.} =
