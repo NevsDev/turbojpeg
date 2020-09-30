@@ -1,13 +1,12 @@
 import headers/turbojpeg_header
 import shared_handler
 
-proc jpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool =
+proc jpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP, flags = 0): bool =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     width, height: int
     subsample: TJSAMP
     colorspace: TJCS
-    flags = TJFLAG_FORCESSE3
     padding = 1               # 1 or 4 can be, but is not 0
 
   if decompressor == nil: decompressor = tjInitDecompress()
@@ -34,15 +33,14 @@ proc jpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr Unchec
     return false
   return true
 
-proc jpeg2yuv*(jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP): bool {.inline.} =
+proc jpeg2yuv*(jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, yuv_sample: var TJSAMP, flags = 0): bool {.inline.} =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
-  result = jpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample)
+  result = jpeg2yuv(jpeg_buffer[0].unsafeAddr, jpeg_buffer.len.uint, yuv_buffer, yuv_size, yuv_sample, flags)
  
 
 proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: int, subsample: TJSAMP, 
-                jpeg_buffer: var ptr UncheckedArray[uint8], jpeg_size: var uint, quality: TJQuality): bool =
+                jpeg_buffer: var ptr UncheckedArray[uint8], jpeg_size: var uint, quality: TJQuality, flags = 0): bool =
   var 
-    flags = 0
     padding = 1 # 1 or 4 can be, but is not 0
  
   if compressor == nil: compressor = tjInitCompress()
@@ -61,11 +59,11 @@ proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: i
     return false
   return true
 
-proc yuv2jpegFile*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: int, subsample: TJSAMP, filename: string, jpegQual: TJQuality = 80): bool =
+proc yuv2jpegFile*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: int, subsample: TJSAMP, filename: string, jpegQual: TJQuality = 80, flags = 0): bool =
   var 
     jpegBuf: ptr UncheckedArray[uint8]
     jpegSize: uint
-  if yuv2jpeg(yuv_buffer, width, height, subsample, jpegBuf, jpegSize, jpegQual):
+  if yuv2jpeg(yuv_buffer, width, height, subsample, jpegBuf, jpegSize, jpegQual, flags):
     var file = open(filename, fmWrite)
     if file != nil:
       discard file.writeBuffer(jpegBuf, jpegSize.int)
