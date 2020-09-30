@@ -628,10 +628,11 @@ proc tjCompress2_Impl(handle: tjhandle; srcBuf: pointer; width, pitch, height: c
                  {.importc: "tjCompress2".}
                  
 type TJQuality* = range[1..100]
-proc tjCompress2*(handle: tjhandle, srcBuf: pointer | ptr uint8 | string, width, height: int, pixelFormat: TJPF, 
+proc tjCompress2*(handle: tjhandle, srcBuf: pointer | ptr uint8 | ptr UncheckedArray[uint8] | string, width, height: int, pixelFormat: TJPF, 
                  jpegBuf: var ptr UncheckedArray[byte], jpegSize: var uint, jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int = 0, pitch: uint = 0): bool {.discardable, inline.} =
-  var srcAddr = when srcBuf is pointer: srcBuf
-                elif srcBuf is string: srcBuf[0].unsafeAddr
+  var srcAddr = when srcBuf is string: srcBuf[0].unsafeAddr
+                else: srcBuf
+                
   result = tjCompress2_Impl(handle, srcAddr, width.cint, pitch.cint, height.cint, pixelFormat, jpegBuf.addr, jpegSize.culong.addr, jpegSubsamp, jpegQual.cint, flags.cint) == 0
   
 proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string, width, height: int, pixelFormat: TJPF, 
