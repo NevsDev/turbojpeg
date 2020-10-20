@@ -18,12 +18,9 @@ proc jpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr Unchec
   yuv_sample = subsample;
   # Note: After testing, the designated sampling yuv YUV format only affects the buffer size, in fact or by itself JPEG YUV format conversion
   var buffSize = tjBufSizeYUV2(width, padding, height, subsample);
-  if yuv_size != buffSize:
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and yuv_size != buffSize:
     yuv_size = buffSize
-    if yuv_buffer == nil:
-      yuv_buffer = cast[ptr UncheckedArray[uint8]](alloc(yuv_size))
-    else:
-      yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
+    yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
     if yuv_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
@@ -47,7 +44,7 @@ proc yuv2jpeg*(yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: i
 
 
   var maxJSize = tjBufSize()
-  if maxJSize != jpeg_size:
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and maxJSize != jpeg_size:
     if jpeg_buffer == nil:
       jpeg_buffer = cast[ptr UncheckedArray[uint8]](alloc(jpeg_size))
     elif jpeg_size < maxJSize:

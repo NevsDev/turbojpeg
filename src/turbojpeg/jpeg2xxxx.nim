@@ -20,13 +20,9 @@ proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8 | ptr char, jpeg_size: uint, fo
                 elif format == TJPF_GRAY: (width * height).uint
                 else: (width * height * 4).uint
 
-  if dst_size != buffSize:
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and dst_size != buffSize:
     dst_size = buffSize
-
-    if dst_buffer == nil:
-      dst_buffer = cast[ptr UncheckedArray[uint8]](alloc(dst_size))
-    else:
-      dst_buffer = cast[ptr UncheckedArray[uint8]](realloc(dst_buffer, dst_size))
+    dst_buffer = cast[ptr UncheckedArray[uint8]](realloc(dst_buffer, dst_size))
     if dst_buffer == nil:
       echo("alloc buffer failed.\n")
       return false

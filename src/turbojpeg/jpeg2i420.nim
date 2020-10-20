@@ -17,7 +17,7 @@ proc jpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr Unch
     return false
  
   var buffSize = (width * height * 3).uint
-  if buffer.buffer_size != buffSize:
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and buffer.buffer_size != buffSize:
     buffer.buffer_size = buffSize
     if buffer.buffer_size_max < buffSize:
       buffer.buffer_size_max = buffSize

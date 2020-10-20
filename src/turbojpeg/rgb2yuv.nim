@@ -12,12 +12,9 @@ proc rgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: var ptr Unche
    
   var buffSize = tjBufSizeYUV2(width, padding, height, subsample)
 
-  if yuv_size != buffSize:
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and yuv_size != buffSize:
     yuv_size = buffSize
-    if yuv_buffer == nil:
-      yuv_buffer = cast[ptr UncheckedArray[uint8]](alloc(yuv_size))
-    else:
-      yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
+    yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
     if yuv_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
@@ -28,3 +25,6 @@ proc rgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: var ptr Unche
   return true
 
 
+
+if (TJFLAG_NOREALLOC and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC:
+  echo "asdasd"
