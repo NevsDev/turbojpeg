@@ -21,11 +21,11 @@ proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8 | ptr char, jpeg_size: uint, fo
                 else: (width * height * 4).uint
 
   if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and dst_size != buffSize:
-    dst_size = buffSize
     dst_buffer = cast[ptr UncheckedArray[uint8]](realloc(dst_buffer, dst_size))
     if dst_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
+  dst_size = buffSize
 
 
   if not tjDecompress2(decompressor, jpeg_buffer, jpeg_size, dst_buffer, width, height, TJPF_RGB, flags, 0):

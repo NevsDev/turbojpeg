@@ -22,9 +22,9 @@ elif defined(android):
 else:
   {.error: "Yout System is not supported now".}
 
-include turbojpeg/headers/turbojpeg_header
-
+import turbojpeg/headers/turbojpeg_header
+const FAST_FLAGS* = TJFLAG_NOREALLOC or TJFLAG_FASTUPSAMPLE or TJFLAG_FASTDCT
 
 import turbojpeg/[jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx]
 
-export jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx
+export turbojpeg_header, jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx

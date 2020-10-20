@@ -13,18 +13,13 @@ proc rgb2yuv*(rgb_buffer: pointer, width, height: int, yuv_buffer: var ptr Unche
   var buffSize = tjBufSizeYUV2(width, padding, height, subsample)
 
   if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and yuv_size != buffSize:
-    yuv_size = buffSize
     yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
     if yuv_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
+  yuv_size = buffSize
 
   if tjEncodeYUV3(compressor, rgb_buffer, width, 0, height, pixelfmt, yuv_buffer, padding, subsample, flags) != 0:
     echo tjGetErrorStr2(compressor)
     return false
   return true
-
-
-
-if (TJFLAG_NOREALLOC and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC:
-  echo "asdasd"

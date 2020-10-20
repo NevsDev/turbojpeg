@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.8.0"
+version       = "0.8.1"
 author        = "Sven Keller"
 description   = "TurboJpeg in nim - auto static linked"
 license       = "libjpeg-turbo is covered by three compatible BSD-style open source licenses (see: LICENSE.md)"

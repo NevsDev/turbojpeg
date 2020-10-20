@@ -3,7 +3,6 @@ import shared_handler
 
 
 proc jpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int, flags = 0): bool =
-  # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     subsample: TJSAMP
     colorspace: TJCS
@@ -17,25 +16,22 @@ proc jpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr Unch
     return false
  
   var buffSize = (width * height * 3).uint
-  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and buffer.buffer_size != buffSize:
+  if buffer.buffer_size != buffSize:
     buffer.buffer_size = buffSize
     if buffer.buffer_size_max < buffSize:
       buffer.buffer_size_max = buffSize
-      if buffer.buffer == nil:
-        buffer.buffer = cast[ptr UncheckedArray[uint8]](alloc(buffer.buffer_size_max))
-      else:
-        buffer.buffer = cast[ptr UncheckedArray[uint8]](realloc(buffer.buffer, buffer.buffer_size_max))
+      buffer.buffer = cast[ptr UncheckedArray[uint8]](realloc(buffer.buffer, buffer.buffer_size_max))
       if buffer.buffer == nil:
         echo("alloc buffer failed.\n")
         return false
 
   var std_i420_size = (width * height * 3 div 2).uint
   if i420_size != std_i420_size:  # 12 bits per pixel
-    i420_size = std_i420_size
     if i420_buffer == nil:
       i420_buffer = cast[ptr UncheckedArray[uint8]](alloc(i420_size))
     else:
       i420_buffer = cast[ptr UncheckedArray[uint8]](realloc(i420_buffer, i420_size))
+  i420_size = std_i420_size
 
   if not tjDecompress2(decompressor, jpeg_buffer, jpeg_size, buffer.buffer, width, height, TJPF_RGB, flags, 0):
     echo tjGetErrorStr2(decompressor)

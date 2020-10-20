@@ -16,11 +16,11 @@ proc yuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsamp
   
   var rgbSize = width * height * tjPixelSize[pixelfmt.int]
   if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and rgb_size != rgbSize:
-    rgb_size = rgbSize
     rgb_buffer = cast[ptr UncheckedArray[uint8]](realloc(rgb_buffer, rgb_size))
     if rgb_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
+  rgb_size = rgbSize
 
   if tjDecodeYUV(decompressor, yuv_buffer, padding, subsample, rgb_buffer, width, 0, height, pixelfmt, flags) != 0:
     echo tjGetErrorStr2(decompressor)

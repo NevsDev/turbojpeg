@@ -13,4 +13,3 @@ var
 var decompressor* {.threadvar.}: tjhandle
 var compressor* {.threadvar.}: tjhandle
 
-const FAST_FLAGS* = TJFLAG_NOREALLOC or TJFLAG_FASTUPSAMPLE or TJFLAG_FASTDCT

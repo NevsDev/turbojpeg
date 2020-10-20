@@ -19,11 +19,11 @@ proc jpeg2yuv*(jpeg_buffer: pointer, jpeg_size: uint, yuv_buffer: var ptr Unchec
   # Note: After testing, the designated sampling yuv YUV format only affects the buffer size, in fact or by itself JPEG YUV format conversion
   var buffSize = tjBufSizeYUV2(width, padding, height, subsample);
   if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and yuv_size != buffSize:
-    yuv_size = buffSize
     yuv_buffer = cast[ptr UncheckedArray[uint8]](realloc(yuv_buffer, yuv_size))
     if yuv_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
+  yuv_size = buffSize
 
   if tjDecompressToYUV2(decompressor, jpeg_buffer, jpeg_size, yuv_buffer, width, padding, height, flags) != 0:
     echo tjGetErrorStr2(decompressor)
