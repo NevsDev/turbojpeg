@@ -1373,10 +1373,11 @@ proc tjDecodeYUV*(handle: tjhandle, srcBuf: pointer | ptr uint8, pad: int; subsa
 ##
 ##  @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr2()
 ##  and #tjGetErrorCode().)
-proc tjDecodeYUVPlanes*(handle: tjhandle; srcPlanes: ptr ptr cuchar; strides: ptr cint;
-                       subsamp: cint; dstBuf: ptr cuchar; width: cint; pitch: cint;
+proc tjDecodeYUVPlanes*(handle: tjhandle; srcPlanes: array[3, ptr UncheckedArray[uint8]]; strides: array[3, cint];
+                       subsamp: cint; dstBuf: pointer; width: cint; pitch: cint;
                        height: cint; pixelFormat: cint; flags: cint): cint 
                        {.importc: "tjDecodeYUVPlanes".}
+
 
 ##  Create a new TurboJPEG transformer instance.
 ##

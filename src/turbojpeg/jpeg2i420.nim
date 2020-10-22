@@ -14,7 +14,8 @@ proc jpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr Unch
   if not tjDecompressHeader3(decompressor, jpeg_buffer, jpeg_size, width, height, subsample, colorspace):
     echo tjGetErrorStr2(decompressor)
     return false
- 
+    
+  echo jpeg_size, " ", width, " ", height
   var buffSize = (width * height * 3).uint
   if buffer.buffer_size != buffSize:
     buffer.buffer_size = buffSize
@@ -22,22 +23,22 @@ proc jpeg2i420*(jpeg_buffer: pointer, jpeg_size: uint, i420_buffer: var ptr Unch
       buffer.buffer_size_max = buffSize
       buffer.buffer = cast[ptr UncheckedArray[uint8]](realloc(buffer.buffer, buffer.buffer_size_max))
       if buffer.buffer == nil:
-        echo("alloc buffer failed.\n")
+        echo("alloc buffer failed.")
         return false
 
   var std_i420_size = (width * height * 3 div 2).uint
-  if i420_size != std_i420_size:  # 12 bits per pixel
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and i420_size != std_i420_size:  # 12 bits per pixel
+    i420_buffer = cast[ptr UncheckedArray[uint8]](realloc(i420_buffer, std_i420_size))
     if i420_buffer == nil:
-      i420_buffer = cast[ptr UncheckedArray[uint8]](alloc(i420_size))
-    else:
-      i420_buffer = cast[ptr UncheckedArray[uint8]](realloc(i420_buffer, i420_size))
+      echo("alloc buffer i420_buffer failed.")
+      return false
   i420_size = std_i420_size
 
   if not tjDecompress2(decompressor, jpeg_buffer, jpeg_size, buffer.buffer, width, height, TJPF_RGB, flags, 0):
     echo tjGetErrorStr2(decompressor)
     return false
 
-  if tjEncodeYUV3(compressor, buffer.buffer, width, pitch = 0, height, TJPF_RGB, i420_buffer, padding, TJSAMP_420, flags) != 0:
+  if tjEncodeYUV3(compressor, buffer.buffer, width, pitch = 0, height, TJPF_RGB, i420_buffer, padding, TJSAMP_420, flags = flags or TJFLAG_NOREALLOC) != 0:
     echo tjGetErrorStr2(compressor)
     return false
   return true

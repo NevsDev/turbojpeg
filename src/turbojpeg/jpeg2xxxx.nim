@@ -21,7 +21,7 @@ proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8 | ptr char, jpeg_size: uint, fo
                 else: (width * height * 4).uint
 
   if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and dst_size != buffSize:
-    dst_buffer = cast[ptr UncheckedArray[uint8]](realloc(dst_buffer, dst_size))
+    dst_buffer = cast[ptr UncheckedArray[uint8]](realloc(dst_buffer, buffSize))
     if dst_buffer == nil:
       echo("alloc buffer failed.\n")
       return false

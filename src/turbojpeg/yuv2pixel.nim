@@ -16,7 +16,7 @@ proc yuv2pixel*(yuv_buffer: pointer, yuv_size: uint, width, height: int, subsamp
   
   var rgbSize = width * height * tjPixelSize[pixelfmt.int]
   if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and rgb_size != rgbSize:
-    rgb_buffer = cast[ptr UncheckedArray[uint8]](realloc(rgb_buffer, rgb_size))
+    rgb_buffer = cast[ptr UncheckedArray[uint8]](realloc(rgb_buffer, rgbSize))
     if rgb_buffer == nil:
       echo("alloc buffer failed.\n")
       return false
