@@ -25,6 +25,6 @@ else:
 import turbojpeg/headers/turbojpeg_header
 const FAST_FLAGS* = TJFLAG_NOREALLOC or TJFLAG_FASTUPSAMPLE or TJFLAG_FASTDCT
 
-import turbojpeg/[jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx]
+import turbojpeg/[jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx, i4202pixel]
 
-export turbojpeg_header, jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx
+export turbojpeg_header, jpeg2i420, jpeg2yuv, rgb2yuv, yuv2pixel, jpeg2xxxx, i4202pixel
