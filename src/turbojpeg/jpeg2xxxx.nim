@@ -4,7 +4,7 @@ import shared_handler
 
 
 
-proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8 | ptr char, jpeg_size: uint, format: TJPF, dst_buffer: var ptr UncheckedArray[uint8], dst_size: var uint, width, height: var int, flags = 0): bool =
+proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8, jpeg_size: uint, format: TJPF, dst_buffer: var ptr UncheckedArray[uint8], dst_size: var uint, width, height: var int, flags = 0): bool =
   # yuv_buffer will be assigned and resized automaticly: yuv_buffer <-> yuv_size
   var 
     subsample: TJSAMP
@@ -36,7 +36,7 @@ proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8 | ptr char, jpeg_size: uint, fo
 
 proc maxJpegSize*(width, height: int): int = TJBUFSIZE(width.cint, height.cint).int
 
-proc xxxx2jpeg*(format: TJPF, buffer: pointer | ptr uint8 | ptr UncheckedArray[uint8] | string, width, height: int, jpeg_buffer: var ptr UncheckedArray[byte], buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool  =
+proc xxxx2jpeg*(format: TJPF, buffer: pointer | ptr uint8 | ptr UncheckedArray[uint8], width, height: int, jpeg_buffer: var ptr UncheckedArray[byte], buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool  =
   if compressor == nil: compressor = tjInitCompress()
 
   if tjCompress2(compressor, buffer, width, height, pixelFormat = format, jpeg_buffer, buffer_size, jpegSubsamp = TJSAMP_444, quality, flags):
@@ -45,7 +45,7 @@ proc xxxx2jpeg*(format: TJPF, buffer: pointer | ptr uint8 | ptr UncheckedArray[u
     echo tjGetErrorStr2(compressor)
 
 
-proc xxxx2jpegFile*(format: TJPF, buffer: pointer | ptr uint8 |  ptr UncheckedArray[uint8] | string, width, height: int, filename: string, quality: TJQuality = 80, flags = 0): bool  =
+proc xxxx2jpegFile*(format: TJPF, buffer: pointer | ptr uint8 |  ptr UncheckedArray[uint8], width, height: int, filename: string, quality: TJQuality = 80, flags = 0): bool  =
   var
     jpeg_buffer: ptr UncheckedArray[byte]
     buffer_size: uint

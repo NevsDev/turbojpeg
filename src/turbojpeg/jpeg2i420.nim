@@ -56,7 +56,9 @@ proc jpegFile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8]
 
 proc i4202jpeg*(i420_buffer: ptr UncheckedArray[ptr UncheckedArray[uint8]], width, height: int, jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality = 80, strides: ptr UncheckedArray[cint] = nil, flags = 0): bool =
   if compressor == nil: compressor = tjInitCompress()
-  result = tjCompressFromYUVPlanes(compressor, i420_buffer, width, strides, height, TJSAMP_420, jpegBuf, jpegSize, jpegQual, flags) 
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and jpegSize < (width * height * 3).uint:
+    jpegBuf = cast[ptr UncheckedArray[uint8]](realloc(jpegBuf, width * height * 3))
+  result = tjCompressFromYUVPlanes(compressor, i420_buffer, width, strides, height, TJSAMP_420, jpegBuf, jpegSize, jpegQual, flags or TJFLAG_NOREALLOC) 
   if not result:
     echo tjGetErrorStr2(compressor)
 
