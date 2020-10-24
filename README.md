@@ -1,71 +1,57 @@
-Turbo-Jpeg
-==========
-During the compilationtime the program will link with turbojpeg.a.
-You don't need any compilation flags.
-Currently supported:
+### Turbo-Jpeg
+
+Port of libturbojpeg. 
+The compiled static object is automatically linked in your build.
+
+#### Currently supported:
 - Linux
 - Windows
 
-
-
-Examples
-========
+#### High level API
+There is also a high level api for compression, decompression of formats:
 ```nim
-import turbojpeg
+# convert i420 planes to rgb format
+proc i4202rgb(
+  i420_planes: array[3, ptr UncheckedArray[uint8]], strides: array[3, cint], width, height: int,
+  rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint, flags = 0
+): bool 
 
-var
-  width, height: int32
-  jpegSubsamp: TJSAMP
-  colorSpace: TJCS
-  jpegRaw = readFile("examples/test.jpg")
-  success: bool
+# convert yuv to rgb format
+proc yuv2rgb(
+  yuv_buffer: pointer, yuv_size: uint, width, height: int, subsample: TJSAMP, 
+  rgb_buffer: var ptr UncheckedArray[uint8], rgb_size: var uint, flags = 0
+): bool
 
-#####################################################
-##                  DECOMPRESS                     ##
-#####################################################
-# Init Handler
-var handle = tjInitDecompress()
+# convert rgb to yuv format
+proc rgb2yuv(
+  rgb_buffer: pointer, width, height: int, 
+  yuv_buffer: var ptr UncheckedArray[uint8], yuv_size: var uint, 
+  subsample: TJSAMP, flags = 0
+): bool 
 
-# Decompress Header
-# with pointer to raw data and the size of data 
-success = tjDecompressHeader3(handle, jpegRaw[0].addr, jpegRaw.len, width, height, jpegSubsamp, colorSpace)    
-# or direct with string or seq[char|uint8] data
-success = tjDecompressHeader3(handle, jpegRaw, width, height, jpegSubsamp, colorSpace)    
+# convert yuv to jpeg format
+proc yuv2jpeg(
+  yuv_buffer: pointer | ptr UncheckedArray[uint8], width, height: int, subsample: TJSAMP,
+  jpeg_buffer: var ptr UncheckedArray[uint8], jpeg_size: var uint, 
+  quality: TJQuality, flags = 0
+): bool
 
-echo "Size: ", width, "x", height, "  Subsample: ", jpegSubsamp, "  ColorSpace: ", colorSpace
+# convert jpeg to yuv
+proc jpeg2yuv(
+  jpeg_buffer: string, yuv_buffer: var ptr UncheckedArray[uint8], 
+  yuv_size: var uint, yuv_sample: var TJSAMP, flags = 0
+): bool
 
-# Decompress Data to RGB and Fast
-var outBuffer = newString(width * height * 3) # outBuffer can also be pointer or seq[char|uint8]
-success = tjDecompress2(handle, jpegRaw, outBuffer, width, height, TJPF_RGB, TJFLAG_FASTDCT, pitch = 0)
+# convert planar yuv to jpeg
+proc i4202jpeg(
+  i420_buffer: array[3, ptr UncheckedArray[uint8]], width, height: int, 
+  jpegBuf: var ptr UncheckedArray[uint8], jpegSize: var uint, jpegQual: TJQuality = 80, 
+  strides: array[3, cint], flags = 0
+): bool
 
-# free handle
-tjDestroy(handle)
-
-#####################################################
-##                    COMPRESS                     ##
-#####################################################
-var 
-  rawRGBbuffer = outBuffer
-  outputJPGbuffer: ptr UncheckedArray[byte]
-  jpegSize: uint
-# Init Handler
-var compHandle = tjInitCompress()
-
-success = tjCompress2(compHandle, rawRGBbuffer, width, height, pixelFormat = TJPF_RGB, 
-                outputJPGbuffer.addr, jpegSize, jpegSubsamp = TJSAMP_444, jpegQual = 80, flags = 0, pitch = 0)
-# or compress direct to string
-var rawImage: string = tjCompress2(compHandle, rawRGBbuffer, width, height, pixelFormat = TJPF_RGB, 
-                                    jpegSubsamp = TJSAMP_444, jpegQual = 80, flags = 0, pitch = 0)
-
-# write File to storage
-var file = open("compressed_img.jpeg", fmWrite)
-assert(file.writeBuffer(outputJPGbuffer[0].addr, jpegSize) == jpegSize.int)
-file.close()
-
-writeFile("compress_direct_img.jpeg", rawImage)
-
-# free handle
-tjDestroy(compHandle)
-
-
+...
 ```
+
+
+### Examples
+For low level examples see in examples/...
