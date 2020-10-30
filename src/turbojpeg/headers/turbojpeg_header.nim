@@ -632,14 +632,15 @@ proc tjCompress2*(handle: tjhandle, srcBuf: pointer | ptr uint8 | ptr UncheckedA
                  jpegBuf: var ptr UncheckedArray[byte], jpegSize: var uint, jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int = 0, pitch: uint = 0): bool {.discardable, inline.} =
   var srcAddr = when srcBuf is string: srcBuf[0].unsafeAddr
                 else: srcBuf
-                
-  result = tjCompress2_Impl(handle, srcAddr, width.cint, pitch.cint, height.cint, pixelFormat, jpegBuf.addr, jpegSize.culong.addr, jpegSubsamp, jpegQual.cint, flags.cint) == 0
-  
+  var size = jpegSize.culong
+  result = tjCompress2_Impl(handle, srcAddr, width.cint, pitch.cint, height.cint, pixelFormat, jpegBuf.addr, size.addr, jpegSubsamp, jpegQual.cint, flags.cint) == 0
+  jpegSize = size.uint
+
 proc tjCompress2*(handle: tjhandle, srcBuf: pointer|string, width, height: int, pixelFormat: TJPF, 
                  jpegSubsamp: TJSAMP = TJSAMP_444, jpegQual: TJQuality = 80, flags: int32 = 0, pitch: uint = 0): string {.inline.} =
   var
     outputJPGbuffer: ptr UncheckedArray[byte]
-    jpegSize: culong
+    jpegSize: uint
   if tjCompress2(handle, srcBuf, width, height, pixelFormat, outputJPGbuffer, jpegSize, jpegSubsamp, jpegQual, flags.cint, pitch):
     result.setLen(jpegSize)
     copyMem(result[0].addr, outputJPGbuffer[0].addr, jpegSize)

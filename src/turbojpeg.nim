@@ -2,15 +2,17 @@ import os
 
 template getBinPath(): TaintedString =
   let info = splitFile(instantiationInfo(fullPaths = true).filename).dir
+  echo info&"/turbojpeg/bin/win32/libturbojpeg.dll.a"
   info
 
 when defined(Windows):
   when defined(m64):
-    {.passL:getBinPath()&"/turbojpeg/bin/win64/libturbojpeg.a",
-      passL:getBinPath()&"/turbojpeg/bin/win64/libturbojpeg.dll.a".}
+    {.passL:getBinPath()&"/turbojpeg/bin/win64/libturbojpeg.a".}
   else:
-    {.passL:getBinPath()&"/turbojpeg/bin/win32/libturbojpeg.a",
-      passL:getBinPath()&"/turbojpeg/bin/win32/libturbojpeg.dll.a".}
+    {.
+      passL:getBinPath()&"\\turbojpeg\\bin\\win32\\libturbojpeg.dll.a",
+      passL:getBinPath()&"\\turbojpeg\\bin\\win32\\libturbojpeg.a"
+    .}
 elif defined(Linux):
   {.passL:getBinPath()&"/turbojpeg/bin/linux/libturbojpeg.a".}
 
