@@ -6,12 +6,11 @@ template getBinPath(): TaintedString =
   info
 
 when defined(Windows):
-  when defined(m64):
+  when sizeof(int) == 8:
     {.passL:getBinPath()&"/turbojpeg/bin/win64/libturbojpeg.a".}
   else:
     {.
-      passL:getBinPath()&"\\turbojpeg\\bin\\win32\\libturbojpeg.dll.a",
-      passL:getBinPath()&"\\turbojpeg\\bin\\win32\\libturbojpeg.a"
+      passL:getBinPath()&"/turbojpeg/bin/win32/libturbojpeg.a"
     .}
 elif defined(Linux):
   {.passL:getBinPath()&"/turbojpeg/bin/linux/libturbojpeg.a".}
