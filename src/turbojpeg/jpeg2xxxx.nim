@@ -27,7 +27,6 @@ proc jpeg2xxxx*(jpeg_buffer: pointer | ptr uint8, jpeg_size: uint, format: TJPF,
       return false
   dst_size = buffSize
 
-
   if not tjDecompress2(decompressor, jpeg_buffer, jpeg_size, dst_buffer, width, height, TJPF_RGB, flags, 0):
     echo tjGetErrorStr2(decompressor)
     return false
@@ -39,7 +38,10 @@ proc maxJpegSize*(width, height: int): int = TJBUFSIZE(width.cint, height.cint).
 proc xxxx2jpeg*(format: TJPF, buffer: pointer | ptr uint8 | ptr UncheckedArray[uint8], width, height: int, jpeg_buffer: var ptr UncheckedArray[byte], buffer_size: var uint, quality: TJQuality = 80, flags = 0): bool  =
   if compressor == nil: compressor = tjInitCompress()
 
-  if tjCompress2(compressor, buffer, width, height, pixelFormat = format, jpeg_buffer, buffer_size, jpegSubsamp = TJSAMP_444, quality, flags):
+  if ((flags and TJFLAG_NOREALLOC) != TJFLAG_NOREALLOC) and buffer_size < (width * height * 3).uint:
+    jpeg_buffer = cast[ptr UncheckedArray[uint8]](realloc(jpeg_buffer, width * height * 3))
+
+  if tjCompress2(compressor, buffer, width, height, pixelFormat = format, jpeg_buffer, buffer_size, jpegSubsamp = TJSAMP_444, quality, flags or TJFLAG_NOREALLOC):
     result = true
   else:
     echo tjGetErrorStr2(compressor)
@@ -58,7 +60,7 @@ proc xxxx2jpegFile*(format: TJPF, buffer: pointer | ptr uint8 |  ptr UncheckedAr
       result = true
     else:
       result = false
-    tjFree(jpeg_buffer)
+    dealloc(jpeg_buffer)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
