@@ -2,7 +2,6 @@ import os
 
 template getBinPath(): TaintedString =
   let info = splitFile(instantiationInfo(fullPaths = true).filename).dir
-  echo info&"/turbojpeg/bin/win32/libturbojpeg.dll.a"
   info
 
 when defined(Windows):
