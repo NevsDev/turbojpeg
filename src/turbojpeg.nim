@@ -6,13 +6,13 @@ template getBinPath(): TaintedString =
 
 when defined(Windows):
   when sizeof(int) == 8:
-    {.passL:getBinPath()&"/turbojpeg/bin/win64/libturbojpeg.a".}
+    {.passL:"\"" & getBinPath()&"\\turbojpeg\\bin\\win64\\libturbojpeg.a\"".}
   else:
     {.
-      passL:getBinPath()&"/turbojpeg/bin/win32/libturbojpeg.a"
+      passL:"\"" & getBinPath()&"/turbojpeg/bin/win32/libturbojpeg.a\""
     .}
 elif defined(Linux):
-  {.passL:getBinPath()&"/turbojpeg/bin/linux/libturbojpeg.a".}
+  {.passL:"\"" & getBinPath()&"/turbojpeg/bin/linux/libturbojpeg.a\"".}
 
 elif defined(MacOsX):
   {.error: "MacOsX is not supported now".}
