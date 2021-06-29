@@ -49,6 +49,7 @@ proc jpeg2i420*(jpeg_buffer: string, i420_buffer: var ptr UncheckedArray[uint8],
 
 
 proc jpegFile2i420*(filename: string, i420_buffer: var ptr UncheckedArray[uint8], i420_size: var uint, width, height: var int, flags = 0): bool =
+  echo "here"
   var fileContent = readFile(filename)
   result = jpeg2i420(fileContent[0].unsafeAddr, fileContent.len.uint, i420_buffer, i420_size, width, height, flags)
 

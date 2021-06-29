@@ -7,5 +7,5 @@ examples/**
 !examples/**.nims
 !examples/**.nim
 
-
+*.exe
 *.jpeg

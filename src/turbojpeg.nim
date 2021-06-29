@@ -1,18 +1,21 @@
-import os
+import os, strutils
 
 template getBinPath(): TaintedString =
   let info = splitFile(instantiationInfo(fullPaths = true).filename).dir
   info
 
+const 
+  path = getBinPath()
+
+
 when defined(Windows):
+  {.passL: "-static -lpthread -dynamic".}
   when sizeof(int) == 8:
-    {.passL:"\"" & getBinPath()&"\\turbojpeg\\bin\\win64\\libturbojpeg.a\"".}
+    {.passL: path.joinPath(normalizedPath("turbojpeg/bin/win64/libturbojpeg.a")).escape.}
   else:
-    {.
-      passL:"\"" & getBinPath()&"/turbojpeg/bin/win32/libturbojpeg.a\""
-    .}
+    {.passL: path.joinPath(normalizedPath("turbojpeg/bin/win32/libturbojpeg.a")).escape.}
 elif defined(Linux):
-  {.passL:"\"" & getBinPath()&"/turbojpeg/bin/linux/libturbojpeg.a\"".}
+  {.passL: path.joinPath(normalizedPath("turbojpeg/bin/linux/libturbojpeg.a")).escape.}
 
 elif defined(MacOsX):
   {.error: "MacOsX is not supported now".}
